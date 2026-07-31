@@ -4,6 +4,7 @@ import { Stethoscope, Star, Users, Plus } from 'lucide-react'
 import { useDoctors, useAddDoctor } from '../lib/api'
 import { useI18n } from '../i18n'
 import AddDoctorModal from '../components/AddDoctorModal'
+import type { Doctor } from '../types'
 
 export default function Doctors() {
   const { t } = useI18n()
@@ -12,14 +13,14 @@ export default function Doctors() {
   const addDoctorMutation = useAddDoctor()
   const [modalOpen, setModalOpen] = useState(false)
 
-  const handleSave = (doc: any) => {
+  const handleSave = (doc: Omit<Doctor, 'id'>) => {
     addDoctorMutation.mutate(doc)
   }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h2 className="text-xl font-bold text-gray-900">{t('doctors')}</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('doctors')}</h2>
         <button
           onClick={() => setModalOpen(true)}
           className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
@@ -39,10 +40,10 @@ export default function Doctors() {
             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-100 to-primary-50 flex items-center justify-center mb-4">
               <Stethoscope className="w-8 h-8 text-primary-600" />
             </div>
-            <h3 className="font-semibold text-gray-900">{doc.name}</h3>
-            <p className="text-sm text-gray-500 mb-4">{doc.specialty}</p>
+            <h3 className="font-semibold text-gray-900 dark:text-white">{doc.name}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{doc.specialty}</p>
 
-            <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
+            <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-4">
               <span className="flex items-center gap-1">
                 <Users className="w-4 h-4" /> {doc.patients}
               </span>
@@ -53,8 +54,8 @@ export default function Doctors() {
 
             <span
               className={`px-3 py-1 rounded-full text-xs font-medium ${doc.available
-                ? 'bg-emerald-50 text-emerald-700'
-                : 'bg-gray-100 text-gray-500'
+                ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300'
                 }`}
             >
               {doc.available ? t('available') : t('busy')}

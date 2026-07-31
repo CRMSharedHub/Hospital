@@ -9,7 +9,7 @@ export default function Settings() {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
   const [notifications, setNotifications] = useState(true)
-  
+
   // Initialize dark mode from localStorage or system preference
   const [darkMode, setDarkMode] = useState(() => {
     return document.documentElement.classList.contains('dark')
@@ -43,13 +43,13 @@ export default function Settings() {
           <div className="flex-1">
             <h3 className="font-semibold text-gray-900 dark:text-white">{t('language')}</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {lang === 'ar' ? 'تغيير لغة واجهة النظام' : 'Change the interface language'}
+              {t('languageDescription')}
             </p>
             <button
               onClick={toggleLang}
               className="mt-3 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
             >
-              {lang === 'ar' ? 'Switch to English' : 'التبديل إلى العربية'}
+              {t('switchLanguage')}
             </button>
           </div>
         </div>
@@ -63,7 +63,7 @@ export default function Settings() {
             <div>
               <h3 className="font-semibold text-gray-900 dark:text-white">{t('notifications')}</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {lang === 'ar' ? 'استقبال تنبيهات المواعيد والرسائل' : 'Receive appointment and message alerts'}
+                {t('notificationsDescription')}
               </p>
             </div>
           </div>
@@ -72,9 +72,8 @@ export default function Settings() {
             className={`relative w-12 h-6 rounded-full transition-colors ${notifications ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'}`}
           >
             <span
-              className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                notifications ? (lang === 'ar' ? '-translate-x-6' : 'translate-x-6') : 'translate-x-1'
-              } ${lang === 'ar' && !notifications ? '-translate-x-1' : ''}`}
+              className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${notifications ? (lang === 'ar' ? '-translate-x-6' : 'translate-x-6') : 'translate-x-1'
+                } ${lang === 'ar' && !notifications ? '-translate-x-1' : ''}`}
             />
           </button>
         </div>
@@ -88,7 +87,7 @@ export default function Settings() {
             <div>
               <h3 className="font-semibold text-gray-900 dark:text-white">{t('darkMode')}</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {lang === 'ar' ? 'تفعيل المظهر الداكن' : 'Enable dark theme'}
+                {t('darkModeDescription')}
               </p>
             </div>
           </div>
@@ -97,9 +96,8 @@ export default function Settings() {
             className={`relative w-12 h-6 rounded-full transition-colors ${darkMode ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'}`}
           >
             <span
-              className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                darkMode ? (lang === 'ar' ? '-translate-x-6' : 'translate-x-6') : 'translate-x-1'
-              } ${lang === 'ar' && !darkMode ? '-translate-x-1' : ''}`}
+              className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${darkMode ? (lang === 'ar' ? '-translate-x-6' : 'translate-x-6') : 'translate-x-1'
+                } ${lang === 'ar' && !darkMode ? '-translate-x-1' : ''}`}
             />
           </button>
         </div>

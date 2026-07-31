@@ -62,7 +62,7 @@ export default function CommandPalette() {
         <div className="max-h-[60vh] overflow-y-auto p-2">
           {query.trim() === '' ? (
             <p className="text-center text-sm text-gray-500 py-8">
-              Type to search for patients, doctors, or appointments...
+              {t('commandPaletteHint')}
             </p>
           ) : (
             <div className="space-y-4 py-2">
@@ -103,8 +103,12 @@ export default function CommandPalette() {
                     <button key={a.id} onClick={() => handleSelect(`/appointments`)} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 text-left">
                       <CalendarDays className="w-4 h-4 text-purple-500" />
                       <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{a.patientName} with {a.doctorName}</p>
-                        <p className="text-xs text-gray-500">{a.date} at {a.time}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          {a.patientName} — {a.doctorName}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {a.date} {a.time}
+                        </p>
                       </div>
                     </button>
                   ))}
@@ -112,7 +116,7 @@ export default function CommandPalette() {
               )}
 
               {filteredPatients.length === 0 && filteredDoctors.length === 0 && filteredAppts.length === 0 && (
-                <p className="text-center text-sm text-gray-500 py-8">No results found.</p>
+                <p className="text-center text-sm text-gray-500 py-8">{t('noResults')}</p>
               )}
             </div>
           )}

@@ -8,9 +8,10 @@ import {
   X,
   Activity,
 } from 'lucide-react'
-import { useI18n } from '../i18n'
+import { useI18n, type TranslationKey } from '../i18n'
+import type { LucideIcon } from 'lucide-react'
 
-const navItems = [
+const navItems: { to: string; icon: LucideIcon; key: TranslationKey }[] = [
   { to: '/', icon: LayoutDashboard, key: 'dashboard' },
   { to: '/patients', icon: Users, key: 'patients' },
   { to: '/doctors', icon: Stethoscope, key: 'doctors' },

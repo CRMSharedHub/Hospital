@@ -3,6 +3,7 @@ import { useI18n } from '../i18n'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
+import type { Patient } from '../types'
 
 const patientSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -13,17 +14,24 @@ const patientSchema = z.object({
   allergies: z.string().optional(),
 })
 
-type PatientFormValues = z.infer<typeof patientSchema>
+type PatientFormInput = z.input<typeof patientSchema>
+type PatientFormValues = z.output<typeof patientSchema>
 
-export default function AddPatientModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClose: () => void; onSave: (data: any) => void }) {
+export interface AddPatientModalProps {
+  isOpen: boolean
+  onClose: () => void
+  onSave: (data: Omit<Patient, 'id'>) => void
+}
+
+export default function AddPatientModal({ isOpen, onClose, onSave }: AddPatientModalProps) {
   const { t } = useI18n()
-  
+
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<PatientFormValues>({
+  } = useForm<PatientFormInput, unknown, PatientFormValues>({
     resolver: zodResolver(patientSchema),
   })
 
@@ -32,14 +40,13 @@ export default function AddPatientModal({ isOpen, onClose, onSave }: { isOpen: b
   const onSubmit = (data: PatientFormValues) => {
     const today = new Date().toISOString().split('T')[0]
     onSave({
-      id: Date.now(),
       name: data.name,
       age: data.age,
       phone: data.phone,
       condition: data.condition,
       lastVisit: today,
       bloodType: data.bloodType || '-',
-      allergies: data.allergies ? data.allergies.split(',').map(s=>s.trim()) : [],
+      allergies: data.allergies ? data.allergies.split(',').map(s => s.trim()) : [],
     })
     reset()
     onClose()

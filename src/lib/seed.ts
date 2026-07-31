@@ -37,7 +37,7 @@ export async function seedDatabase() {
   for (const a of appointments) {
     const patientDoc = patients.find((p) => p.name === a.patient)
     const doctorDoc = doctors.find((d) => d.name === a.doctor)
-    
+
     if (patientDoc && doctorDoc) {
       await db.appointments.add({
         id: a.id,
@@ -47,7 +47,7 @@ export async function seedDatabase() {
         doctorName: a.doctor,
         date: a.date.split(' ')[0],
         time: a.date.split(' ')[1],
-        status: a.status as any,
+        status: a.status,
       })
     }
   }
@@ -56,7 +56,7 @@ export async function seedDatabase() {
   for (const patientIdStr of Object.keys(patientRecords)) {
     const pId = Number(patientIdStr)
     const record = patientRecords[pId]
-    
+
     for (const history of record.history || []) {
       await db.visits.add({
         id: crypto.randomUUID(),

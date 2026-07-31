@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Plus, CalendarDays, List, Calendar as CalendarIcon } from 'lucide-react'
 import AppointmentModal from '../components/AppointmentModal'
 import { useAppointments, useAddAppointment, useUpdateAppointmentStatus, useDoctors, usePatients } from '../lib/api'
-import { useI18n } from '../i18n'
+import { useI18n, type TranslationKey } from '../i18n'
 import type { Appointment } from '../types'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
@@ -23,17 +23,18 @@ const statusColors: Record<string, string> = {
   completed: '#10b981',
 }
 
-const filters = ['all', 'confirmed', 'pending', 'completed', 'cancelled']
+const filters = ['all', 'confirmed', 'pending', 'completed', 'cancelled'] as const
+type Filter = (typeof filters)[number]
 
 export default function Appointments() {
-  const { t, lang } = useI18n()
+  const { t } = useI18n()
   const { data: appointments = [] } = useAppointments()
   const { data: doctors = [] } = useDoctors()
   const { data: patients = [] } = usePatients()
   const addAppointmentMutation = useAddAppointment()
   const updateStatusMutation = useUpdateAppointmentStatus()
 
-  const [filter, setFilter] = useState('all')
+  const [filter, setFilter] = useState<Filter>('all')
   const [modalOpen, setModalOpen] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list')
 
@@ -90,7 +91,7 @@ export default function Appointments() {
               : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
               }`}
           >
-            {f === 'all' ? (lang === 'ar' ? 'الكل' : 'All') : t(f)}
+            {t(f as TranslationKey)}
           </button>
         ))}
       </div>
@@ -136,7 +137,7 @@ export default function Appointments() {
           ))}
           {filtered.length === 0 && (
             <p className="text-center text-gray-400 py-8">
-              {lang === 'ar' ? 'لا توجد مواعيد' : 'No appointments found.'}
+              {t('noAppointments')}
             </p>
           )}
         </div>

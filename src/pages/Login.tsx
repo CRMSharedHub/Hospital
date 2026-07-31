@@ -3,27 +3,28 @@ import { useNavigate } from 'react-router-dom'
 import { Activity, Mail, Lock } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { useI18n } from '../i18n'
+import { DEMO_CREDENTIALS } from '../auth/demoCredentials'
 
 export default function Login() {
-  const { t, lang } = useI18n()
+  const { t } = useI18n()
   const navigate = useNavigate()
   const { login } = useAuthStore()
-  const [email, setEmail] = useState('admin@cityhospital.com')
-  const [password, setPassword] = useState('admin123')
+  const [email, setEmail] = useState<string>(DEMO_CREDENTIALS.email)
+  const [password, setPassword] = useState<string>(DEMO_CREDENTIALS.password)
   const [error, setError] = useState('')
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
-    if (email === 'admin@cityhospital.com' && password === 'admin123') {
+    if (email === DEMO_CREDENTIALS.email && password === DEMO_CREDENTIALS.password) {
       login({
         id: '1',
-        name: 'Admin User',
+        name: DEMO_CREDENTIALS.name,
         email,
         role: 'admin',
       })
       navigate('/')
     } else {
-      setError(lang === 'ar' ? 'بيانات الدخول غير صحيحة' : 'Invalid credentials')
+      setError(t('invalidCredentials'))
     }
   }
 
@@ -39,7 +40,7 @@ export default function Login() {
           {t('appName')}
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-          Sign in to access your dashboard
+          {t('signInSubtitle')}
         </p>
       </div>
 
@@ -53,7 +54,7 @@ export default function Login() {
             )}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Email address
+                {t('emailAddress')}
               </label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -71,7 +72,7 @@ export default function Login() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Password
+                {t('password')}
               </label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -91,7 +92,7 @@ export default function Login() {
               type="submit"
               className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
             >
-              Sign in
+              {t('signIn')}
             </button>
           </form>
         </div>

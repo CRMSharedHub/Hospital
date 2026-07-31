@@ -1,35 +1,53 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowRight, FileText, Pill, StickyNote, Paperclip, Activity, Plus } from 'lucide-react'
-import { usePatient, usePatientEHR, useAddClinicalVisit, useAddMedication, useAddClinicalNote, useUploadMedicalFile } from '../lib/api'
-import { useI18n } from '../i18n'
+import { usePatient, usePatientEHR, useAddClinicalVisit, useAddMedication, useAddClinicalNote } from '../lib/api'
+import { useI18n, type TranslationKey } from '../i18n'
 import { useState } from 'react'
+import type { LucideIcon } from 'lucide-react'
 
-const tabs = ['medicalHistory', 'medications', 'notes', 'files']
-const tabIcons: any = { medicalHistory: FileText, medications: Pill, notes: StickyNote, files: Paperclip }
+const tabs = ['medicalHistory', 'medications', 'notes', 'files'] as const
+type Tab = (typeof tabs)[number]
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+const tabIcons: Record<Tab, LucideIcon> = {
+  medicalHistory: FileText,
+  medications: Pill,
+  notes: StickyNote,
+  files: Paperclip,
+}
 
 export default function PatientDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { t, lang } = useI18n()
-  
+  const { t } = useI18n()
+
   const patientId = Number(id)
   const { data: patient, isLoading: isPatientLoading } = usePatient(patientId)
   const { visits, medications, notes, files } = usePatientEHR(patientId)
-  
-  const [activeTab, setActiveTab] = useState('medicalHistory')
+
+  const [activeTab, setActiveTab] = useState<Tab>('medicalHistory')
 
   // Forms states
   const [showForm, setShowForm] = useState(false)
   const [formText, setFormText] = useState('')
   const [formTitle, setFormTitle] = useState('')
   const [formDate, setFormDate] = useState('')
-  
+
   const addVisitMutation = useAddClinicalVisit()
   const addNoteMutation = useAddClinicalNote()
   const addMedMutation = useAddMedication()
 
-  if (isPatientLoading) return <div className="p-8 text-center">Loading...</div>
-  if (!patient) return <div className="card text-center py-12"><p className="text-gray-500">Patient not found</p></div>
+  if (isPatientLoading) return <div className="p-8 text-center">{t('loading')}</div>
+  if (!patient)
+    return (
+      <div className="card text-center py-12">
+        <p className="text-gray-500 dark:text-gray-400">{t('patientNotFound')}</p>
+      </div>
+    )
 
   const handleSaveVisit = () => {
     addVisitMutation.mutate({ id: crypto.randomUUID(), patientId, doctorId: 1, date: formDate, title: formTitle, notes: formText })
@@ -83,13 +101,13 @@ export default function PatientDetail() {
                   onClick={() => { setActiveTab(tab); setShowForm(false) }}
                   className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab ? 'border-primary-600 text-primary-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
                 >
-                  <Icon className="w-4 h-4" /> {t(tab)}
+                  <Icon className="w-4 h-4" /> {t(tab as TranslationKey)}
                 </button>
               )
             })}
           </div>
           <button onClick={() => setShowForm(!showForm)} className="self-center px-3 py-1.5 bg-primary-50 text-primary-600 text-sm font-medium rounded-lg hover:bg-primary-100 flex items-center gap-1">
-            <Plus className="w-4 h-4" /> Add Record
+            <Plus className="w-4 h-4" /> {t('addRecord')}
           </button>
         </div>
 
@@ -99,10 +117,10 @@ export default function PatientDetail() {
             <div className="space-y-4">
               {showForm && (
                 <div className="p-4 bg-gray-50 rounded-xl space-y-3 mb-6">
-                  <input type="text" placeholder="Visit Title" value={formTitle} onChange={e=>setFormTitle(e.target.value)} className="w-full px-3 py-2 rounded-lg border text-sm" />
-                  <input type="date" value={formDate} onChange={e=>setFormDate(e.target.value)} className="w-full px-3 py-2 rounded-lg border text-sm" />
-                  <textarea placeholder="Clinical notes..." value={formText} onChange={e=>setFormText(e.target.value)} className="w-full px-3 py-2 rounded-lg border text-sm h-20" />
-                  <button onClick={handleSaveVisit} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm">Save Visit</button>
+                  <input type="text" placeholder={t('visitTitle')} value={formTitle} onChange={e => setFormTitle(e.target.value)} className="w-full px-3 py-2 rounded-lg border text-sm" />
+                  <input type="date" value={formDate} onChange={e => setFormDate(e.target.value)} className="w-full px-3 py-2 rounded-lg border text-sm" />
+                  <textarea placeholder={t('clinicalNotes')} value={formText} onChange={e => setFormText(e.target.value)} className="w-full px-3 py-2 rounded-lg border text-sm h-20" />
+                  <button onClick={handleSaveVisit} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm">{t('saveVisit')}</button>
                 </div>
               )}
               {visits.data?.length ? visits.data.map((item) => (
@@ -122,10 +140,10 @@ export default function PatientDetail() {
             <div className="space-y-3">
               {showForm && (
                 <div className="p-4 bg-gray-50 rounded-xl space-y-3 mb-6">
-                  <input type="text" placeholder="Medication Name" value={formTitle} onChange={e=>setFormTitle(e.target.value)} className="w-full px-3 py-2 rounded-lg border text-sm" />
-                  <input type="text" placeholder="Dosage" value={formText} onChange={e=>setFormText(e.target.value)} className="w-full px-3 py-2 rounded-lg border text-sm" />
-                  <input type="date" value={formDate} onChange={e=>setFormDate(e.target.value)} className="w-full px-3 py-2 rounded-lg border text-sm" />
-                  <button onClick={handleSaveMed} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm">Save Medication</button>
+                  <input type="text" placeholder={t('medicationName')} value={formTitle} onChange={e => setFormTitle(e.target.value)} className="w-full px-3 py-2 rounded-lg border text-sm" />
+                  <input type="text" placeholder={t('dosage')} value={formText} onChange={e => setFormText(e.target.value)} className="w-full px-3 py-2 rounded-lg border text-sm" />
+                  <input type="date" value={formDate} onChange={e => setFormDate(e.target.value)} className="w-full px-3 py-2 rounded-lg border text-sm" />
+                  <button onClick={handleSaveMed} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm">{t('saveMedication')}</button>
                 </div>
               )}
               {medications.data?.length ? medications.data.map((med) => (
@@ -133,7 +151,9 @@ export default function PatientDetail() {
                   <Pill className="w-5 h-5 text-primary-600 mt-0.5" />
                   <div>
                     <h4 className="font-medium text-gray-900">{med.name}</h4>
-                    <p className="text-sm text-gray-500">{med.dosage} · Start: {med.startDate}</p>
+                    <p className="text-sm text-gray-500">
+                      {med.dosage} · {t('startDate')}: {med.startDate}
+                    </p>
                   </div>
                 </div>
               )) : <p className="text-gray-400 text-center py-8">{t('noRecords')}</p>}
@@ -145,8 +165,8 @@ export default function PatientDetail() {
             <div className="space-y-3">
               {showForm && (
                 <div className="p-4 bg-gray-50 rounded-xl space-y-3 mb-6">
-                  <textarea placeholder="Write a note..." value={formText} onChange={e=>setFormText(e.target.value)} className="w-full px-3 py-2 rounded-lg border text-sm h-24" />
-                  <button onClick={handleSaveNote} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm">Save Note</button>
+                  <textarea placeholder={t('writeNote')} value={formText} onChange={e => setFormText(e.target.value)} className="w-full px-3 py-2 rounded-lg border text-sm h-24" />
+                  <button onClick={handleSaveNote} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm">{t('saveNote')}</button>
                 </div>
               )}
               {notes.data?.length ? notes.data.map((note) => (
@@ -155,6 +175,39 @@ export default function PatientDetail() {
                   {note.text}
                 </div>
               )) : <p className="text-gray-400 text-center py-8">{t('noRecords')}</p>}
+            </div>
+          )}
+
+          {/* Files */}
+          {activeTab === 'files' && (
+            <div className="space-y-3">
+              {files.data?.length ? (
+                files.data.map((file) => (
+                  <div
+                    key={file.id}
+                    className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 dark:bg-gray-700/40"
+                  >
+                    <Paperclip className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                        {file.name}
+                      </h4>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {file.date} · {formatFileSize(file.size)}
+                      </p>
+                    </div>
+                    <a
+                      href={file.url}
+                      download={file.name}
+                      className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      {t('download')}
+                    </a>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-400 text-center py-8">{t('noFiles')}</p>
+              )}
             </div>
           )}
         </div>

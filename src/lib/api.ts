@@ -1,8 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { db } from './db'
-import { Patient, Doctor, Appointment, ClinicalVisit, Medication, ClinicalNote, MedicalFile } from '../types'
+import type {
+  Patient,
+  Doctor,
+  Appointment,
+  ClinicalVisit,
+  Medication,
+  ClinicalNote,
+  MedicalFile,
+} from '../types'
 import { toast } from 'sonner'
-import { useI18n } from '../i18n'
 
 // Patients
 export const usePatients = () => {

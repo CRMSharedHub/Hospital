@@ -1,5 +1,6 @@
 import { useI18n } from '../i18n'
 import { MoreHorizontal } from 'lucide-react'
+import type { Appointment } from '../types'
 
 const statusStyles: Record<string, string> = {
   confirmed: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -8,7 +9,7 @@ const statusStyles: Record<string, string> = {
   completed: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
 }
 
-export default function AppointmentsTable({ appointments }: { appointments: any[] }) {
+export default function AppointmentsTable({ appointments }: { appointments: Appointment[] }) {
   const { t } = useI18n()
 
   return (
@@ -31,8 +32,8 @@ export default function AppointmentsTable({ appointments }: { appointments: any[
           <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
             {appointments.map((appt) => (
               <tr key={appt.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors">
-                <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100">{appt.patientName || appt.patient}</td>
-                <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{appt.doctorName || appt.doctor}</td>
+                <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100">{appt.patientName}</td>
+                <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{appt.doctorName}</td>
                 <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{appt.date} {appt.time}</td>
                 <td className="px-6 py-4">
                   <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${statusStyles[appt.status]}`}>
@@ -48,7 +49,7 @@ export default function AppointmentsTable({ appointments }: { appointments: any[
             ))}
             {appointments.length === 0 && (
               <tr>
-                <td colSpan={5} className="text-center py-6 text-gray-400">No appointments</td>
+                <td colSpan={5} className="text-center py-6 text-gray-400">{t('noAppointments')}</td>
               </tr>
             )}
           </tbody>

@@ -1,3 +1,33 @@
+import type { Appointment, Patient } from '../types'
+
+export interface SeedAppointment {
+  id: number
+  patient: string
+  doctor: string
+  date: string
+  status: Appointment['status']
+}
+
+export type SeedPatient = Omit<Patient, 'bloodType' | 'allergies'>
+
+export interface SeedDoctor {
+  id: number
+  name: string
+  specialty: string
+  available: boolean
+  patients: number
+  rating: number
+}
+
+export interface PatientRecord {
+  bloodType: string
+  allergies: string[]
+  history: { date: string; title: string; doctor: string; notes: string }[]
+  medications: { name: string; dosage: string; startDate: string }[]
+  notes: { date: string; text: string }[]
+  files: { name: string; date: string }[]
+}
+
 export const stats = [
   { id: 1, labelKey: 'todayAppointments', value: '42', trend: '+12%', icon: 'CalendarDays', color: 'bg-primary-500' },
   { id: 2, labelKey: 'totalPatients', value: '1,248', trend: '+5.4%', icon: 'Users', color: 'bg-accent-500' },
@@ -5,7 +35,7 @@ export const stats = [
   { id: 4, labelKey: 'monthlyRevenue', value: '$84,320', trend: '+8.1%', icon: 'DollarSign', color: 'bg-emerald-500' },
 ]
 
-export const appointments = [
+export const appointments: SeedAppointment[] = [
   { id: 1, patient: 'أحمد محمد', doctor: 'د. سارة القحطاني', date: '2026-07-18 09:00', status: 'confirmed' },
   { id: 2, patient: 'Laila Hassan', doctor: 'Dr. Omar Saleh', date: '2026-07-18 10:30', status: 'pending' },
   { id: 3, patient: 'Khalid Al-Rashid', doctor: 'Dr. Fatima Noor', date: '2026-07-18 11:00', status: 'completed' },
@@ -13,7 +43,7 @@ export const appointments = [
   { id: 5, patient: 'Hana Saeed', doctor: 'Dr. Mona Khalil', date: '2026-07-18 14:45', status: 'confirmed' },
 ]
 
-export const patients = [
+export const patients: SeedPatient[] = [
   { id: 101, name: 'أحمد محمد', age: 34, phone: '+966 50 123 4567', lastVisit: '2026-06-12', condition: 'Hypertension' },
   { id: 102, name: 'Laila Hassan', age: 28, phone: '+966 55 987 6543', lastVisit: '2026-07-01', condition: 'Routine Checkup' },
   { id: 103, name: 'Khalid Al-Rashid', age: 45, phone: '+966 54 555 1212', lastVisit: '2026-07-10', condition: 'Diabetes Follow-up' },
@@ -21,7 +51,7 @@ export const patients = [
   { id: 105, name: 'Hana Saeed', age: 56, phone: '+966 50 333 4444', lastVisit: '2026-07-15', condition: 'Cardiology' },
 ]
 
-export const doctors = [
+export const doctors: SeedDoctor[] = [
   { id: 1, name: 'د. سارة القحطاني', specialty: 'Cardiology', available: true, patients: 120, rating: 4.9 },
   { id: 2, name: 'Dr. Omar Saleh', specialty: 'Pediatrics', available: true, patients: 95, rating: 4.8 },
   { id: 3, name: 'Dr. Fatima Noor', specialty: 'Dermatology', available: false, patients: 80, rating: 4.7 },
@@ -30,7 +60,7 @@ export const doctors = [
   { id: 6, name: 'Dr. Hassan Turki', specialty: 'General Surgery', available: false, patients: 60, rating: 4.6 },
 ]
 
-export const patientRecords = {
+export const patientRecords: Record<number, PatientRecord> = {
   101: {
     bloodType: 'A+',
     allergies: ['Penicillin'],
