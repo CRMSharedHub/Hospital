@@ -3,6 +3,7 @@ import { Plus, CalendarDays, List, Calendar as CalendarIcon } from 'lucide-react
 import AppointmentModal from '../components/AppointmentModal'
 import { useAppointments, useAddAppointment, useUpdateAppointmentStatus, useDoctors, usePatients } from '../lib/api'
 import { useI18n } from '../i18n'
+import type { Appointment } from '../types'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
@@ -113,11 +114,16 @@ export default function Appointments() {
                   <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">{appt.date} {appt.time}</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-3 self-start sm:self-center">
                 <select
                   value={appt.status}
-                  onChange={(e) => updateStatusMutation.mutate({ id: appt.id, status: e.target.value as any })}
+                  onChange={(e) =>
+                    updateStatusMutation.mutate({
+                      id: appt.id,
+                      status: e.target.value as Appointment['status'],
+                    })
+                  }
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer border border-transparent outline-none ${statusStyles[appt.status]}`}
                 >
                   <option value="pending" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">{t('pending')}</option>
@@ -159,7 +165,7 @@ export default function Appointments() {
         doctors={doctors}
         patients={patients}
         existingAppointments={appointments}
-        onSave={(newAppt: any) => addAppointmentMutation.mutate(newAppt)}
+        onSave={(newAppt) => addAppointmentMutation.mutate(newAppt)}
       />
     </div>
   )
