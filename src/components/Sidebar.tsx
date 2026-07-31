@@ -18,7 +18,7 @@ const navItems = [
   { to: '/settings', icon: Settings, key: 'settings' },
 ]
 
-export default function Sidebar({ isOpen, onClose }) {
+export default function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { t, lang } = useI18n()
 
   return (
@@ -30,11 +30,11 @@ export default function Sidebar({ isOpen, onClose }) {
         />
       )}
       <aside
-        className={`fixed lg:static top-0 bottom-0 z-50 w-64 bg-primary-900 text-white transition-transform duration-300
+        className={`fixed lg:static top-0 bottom-0 z-50 w-64 bg-primary-900 dark:bg-gray-900 text-white transition-all duration-300 border-r border-transparent dark:border-gray-800
           ${isOpen ? 'translate-x-0' : 'translate-x-full'} lg:translate-x-0
           ${lang === 'en' ? 'right-0 lg:right-auto' : 'right-0'}`}
       >
-        <div className="flex items-center justify-between px-6 h-16 border-b border-primary-700/40">
+        <div className="flex items-center justify-between px-6 h-16 border-b border-primary-700/40 dark:border-gray-800">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/10 rounded-lg">
               <Activity className="w-6 h-6 text-accent-500" />
@@ -64,7 +64,6 @@ export default function Sidebar({ isOpen, onClose }) {
             </NavLink>
           ))}
         </nav>
-
       </aside>
     </>
   )

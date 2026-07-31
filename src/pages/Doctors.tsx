@@ -1,15 +1,20 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Stethoscope, Star, Users, Plus } from 'lucide-react'
-import { useData } from '../DataContext'
+import { useDoctors, useAddDoctor } from '../lib/api'
 import { useI18n } from '../i18n'
 import AddDoctorModal from '../components/AddDoctorModal'
 
 export default function Doctors() {
   const { t } = useI18n()
   const navigate = useNavigate()
-  const { doctors, addDoctor } = useData()
+  const { data: doctors = [] } = useDoctors()
+  const addDoctorMutation = useAddDoctor()
   const [modalOpen, setModalOpen] = useState(false)
+
+  const handleSave = (doc: any) => {
+    addDoctorMutation.mutate(doc)
+  }
 
   return (
     <div className="space-y-6">
@@ -61,7 +66,7 @@ export default function Doctors() {
       <AddDoctorModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        onSave={addDoctor}
+        onSave={handleSave}
       />
     </div>
   )

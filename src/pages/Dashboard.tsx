@@ -3,9 +3,9 @@ import { stats as rawStats } from '../data/mockData'
 import StatCard from '../components/StatCard'
 import AppointmentsTable from '../components/AppointmentsTable'
 import { useI18n } from '../i18n'
-import { useData } from '../DataContext'
+import { useAppointments } from '../lib/api'
 
-const iconMap = {
+const iconMap: Record<string, any> = {
   CalendarDays,
   Users,
   Stethoscope,
@@ -24,7 +24,7 @@ const activity = [
 
 export default function Dashboard() {
   const { t, lang } = useI18n()
-  const { appointments } = useData()
+  const { data: appointments = [] } = useAppointments()
 
   const stats = rawStats.map((s) => ({ ...s, icon: iconMap[s.icon] }))
 

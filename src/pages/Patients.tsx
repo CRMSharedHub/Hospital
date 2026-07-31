@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { Search, Plus } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { useData } from '../DataContext'
+import { usePatients, useAddPatient } from '../lib/api'
 import { useI18n } from '../i18n'
 import AddPatientModal from '../components/AddPatientModal'
 
 export default function Patients() {
   const { t } = useI18n()
   const navigate = useNavigate()
-  const { patients, addPatient } = useData()
+  const { data: patients = [], isLoading } = usePatients()
+  const addPatientMutation = useAddPatient()
   const [query, setQuery] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
 
@@ -16,6 +17,10 @@ export default function Patients() {
     p.name.toLowerCase().includes(query.toLowerCase()) ||
     p.condition.toLowerCase().includes(query.toLowerCase())
   )
+
+  const handleSave = (data: any) => {
+    addPatientMutation.mutate(data)
+  }
 
   return (
     <div className="space-y-6">
@@ -54,25 +59,28 @@ export default function Patients() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filtered.map((p) => (
-                <tr
-                  key={p.id}
-                  onClick={() => navigate(`/patients/${p.id}`)}
-                  className="hover:bg-gray-50/50 cursor-pointer"
-                >
-                  <td className="px-6 py-4 font-medium text-gray-900">{p.name}</td>
-                  <td className="px-6 py-4 text-gray-600">{p.age}</td>
-                  <td className="px-6 py-4 text-gray-600">{p.phone}</td>
-                  <td className="px-6 py-4 text-gray-600">{p.condition}</td>
-                  <td className="px-6 py-4 text-gray-600">{p.lastVisit}</td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
+              {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-400">
-                    No patients found.
-                  </td>
+                  <td colSpan={5} className="px-6 py-8 text-center text-gray-400">Loading...</td>
                 </tr>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-gray-400">No patients found.</td>
+                </tr>
+              ) : (
+                filtered.map((p) => (
+                  <tr
+                    key={p.id}
+                    onClick={() => navigate(`/patients/${p.id}`)}
+                    className="hover:bg-gray-50/50 cursor-pointer"
+                  >
+                    <td className="px-6 py-4 font-medium text-gray-900">{p.name}</td>
+                    <td className="px-6 py-4 text-gray-600">{p.age}</td>
+                    <td className="px-6 py-4 text-gray-600">{p.phone}</td>
+                    <td className="px-6 py-4 text-gray-600">{p.condition}</td>
+                    <td className="px-6 py-4 text-gray-600">{p.lastVisit}</td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
@@ -82,7 +90,7 @@ export default function Patients() {
       <AddPatientModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        onSave={addPatient}
+        onSave={handleSave}
       />
     </div>
   )
