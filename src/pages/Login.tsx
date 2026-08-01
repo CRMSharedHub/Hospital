@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Activity, Mail, Lock } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { useI18n } from '../i18n'
@@ -8,7 +8,9 @@ import { DEMO_CREDENTIALS } from '../auth/demoCredentials'
 export default function Login() {
   const { t } = useI18n()
   const navigate = useNavigate()
+  const location = useLocation()
   const { login } = useAuthStore()
+  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/'
   const [email, setEmail] = useState<string>(DEMO_CREDENTIALS.email)
   const [password, setPassword] = useState<string>(DEMO_CREDENTIALS.password)
   const [error, setError] = useState('')
@@ -22,7 +24,7 @@ export default function Login() {
         email,
         role: 'admin',
       })
-      navigate('/')
+      navigate(from, { replace: true })
     } else {
       setError(t('invalidCredentials'))
     }
@@ -41,6 +43,9 @@ export default function Login() {
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
           {t('signInSubtitle')}
+        </p>
+        <p className="mt-4 mx-4 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 text-xs text-center">
+          {t('demoAuthWarning')}
         </p>
       </div>
 

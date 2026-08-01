@@ -95,6 +95,8 @@ export const en: Record<TranslationKey, string> = {
   password: 'Password',
   signIn: 'Sign in',
   invalidCredentials: 'Invalid credentials',
+  demoAuthWarning:
+    'Demo build: sign-in is not secure and all data is stored unencrypted in this browser. Do not enter real patient information.',
   languageDescription: 'Change the interface language',
   switchLanguage: 'التبديل إلى العربية',
   notificationsDescription: 'Receive appointment and message alerts',

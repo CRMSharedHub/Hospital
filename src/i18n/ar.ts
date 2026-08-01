@@ -93,6 +93,8 @@ export const ar = {
   password: 'كلمة المرور',
   signIn: 'تسجيل الدخول',
   invalidCredentials: 'بيانات الدخول غير صحيحة',
+  demoAuthWarning:
+    'إصدار تجريبي: تسجيل الدخول غير آمن وجميع البيانات مخزّنة غير مشفّرة في هذا المتصفح. لا تُدخل بيانات مرضى حقيقية.',
   languageDescription: 'تغيير لغة واجهة النظام',
   switchLanguage: 'Switch to English',
   notificationsDescription: 'استقبال تنبيهات المواعيد والرسائل',

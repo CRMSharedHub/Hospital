@@ -13,6 +13,12 @@ describe('authStore', () => {
     expect(state.isAuthenticated).toBe(false)
   })
 
+  it('does not auto-authenticate anyone by default', () => {
+    const initial = useAuthStore.getInitialState()
+    expect(initial.user).toBeNull()
+    expect(initial.isAuthenticated).toBe(false)
+  })
+
   it('should login user correctly', () => {
     const user = {
       id: '1',
@@ -22,7 +28,7 @@ describe('authStore', () => {
     }
 
     useAuthStore.getState().login(user)
-    
+
     const state = useAuthStore.getState()
     expect(state.user).toEqual(user)
     expect(state.isAuthenticated).toBe(true)
@@ -38,7 +44,7 @@ describe('authStore', () => {
 
     useAuthStore.getState().login(user)
     useAuthStore.getState().logout()
-    
+
     const state = useAuthStore.getState()
     expect(state.user).toBeNull()
     expect(state.isAuthenticated).toBe(false)
