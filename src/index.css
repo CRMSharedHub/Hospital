@@ -6,9 +6,11 @@
   html {
     scroll-behavior: smooth;
   }
+
   body {
     @apply bg-gray-50 text-gray-800 antialiased transition-colors duration-200;
   }
+
   .dark body {
     @apply bg-gray-900 text-gray-100;
   }
@@ -18,4 +20,24 @@
   .card {
     @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200;
   }
+}
+
+.dark .fc {
+  --fc-border-color: #374151;
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: rgba(55, 65, 81, 0.4);
+  --fc-today-bg-color: rgba(37, 99, 235, 0.15);
+  color: #e5e7eb;
+}
+
+.dark .fc .fc-button {
+  background-color: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+.dark .fc .fc-button:hover,
+.dark .fc .fc-button-primary:not(:disabled).fc-button-active {
+  background-color: #2563eb;
+  border-color: #2563eb;
 }

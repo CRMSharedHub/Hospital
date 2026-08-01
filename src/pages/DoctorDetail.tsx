@@ -31,7 +31,7 @@ export default function DoctorDetail() {
       </button>
 
       <div className="card flex flex-col md:flex-row md:items-center gap-6">
-        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary-100 to-primary-50 flex items-center justify-center text-primary-700 text-3xl font-bold">
+        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary-100 to-primary-50 dark:from-primary-900/50 dark:to-primary-900/20 flex items-center justify-center text-primary-700 dark:text-primary-300 text-3xl font-bold">
           {doctor.name.charAt(0)}
         </div>
         <div className="flex-1">

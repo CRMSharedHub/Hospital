@@ -37,8 +37,8 @@ export default function Doctors() {
             onClick={() => navigate(`/doctors/${doc.id}`)}
             className="card flex flex-col items-center text-center hover:shadow-md transition-shadow cursor-pointer"
           >
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-100 to-primary-50 flex items-center justify-center mb-4">
-              <Stethoscope className="w-8 h-8 text-primary-600" />
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-100 to-primary-50 dark:from-primary-900/50 dark:to-primary-900/20 flex items-center justify-center mb-4">
+              <Stethoscope className="w-8 h-8 text-primary-600 dark:text-primary-400" />
             </div>
             <h3 className="font-semibold text-gray-900 dark:text-white">{doc.name}</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{doc.specialty}</p>

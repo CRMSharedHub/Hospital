@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Bell, Moon, Sun, Globe, User, LogOut } from 'lucide-react'
 import { useI18n } from '../i18n'
 import { useAuthStore } from '../store/authStore'
+import { useThemeStore } from '../store/themeStore'
 import { useNavigate } from 'react-router-dom'
 
 export default function Settings() {
@@ -9,25 +10,13 @@ export default function Settings() {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
   const [notifications, setNotifications] = useState(true)
-
-  // Initialize dark mode from localStorage or system preference
-  const [darkMode, setDarkMode] = useState(() => {
-    return document.documentElement.classList.contains('dark')
-  })
-
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark')
-      localStorage.setItem('theme', 'dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-      localStorage.setItem('theme', 'light')
-    }
-  }, [darkMode])
+  const theme = useThemeStore((state) => state.theme)
+  const toggleTheme = useThemeStore((state) => state.toggleTheme)
+  const darkMode = theme === 'dark'
 
   const handleLogout = () => {
     logout()
-    navigate('/') // Usually navigate to /login
+    navigate('/login')
   }
 
   return (
@@ -92,7 +81,7 @@ export default function Settings() {
             </div>
           </div>
           <button
-            onClick={() => setDarkMode((v) => !v)}
+            onClick={toggleTheme}
             className={`relative w-12 h-6 rounded-full transition-colors ${darkMode ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'}`}
           >
             <span

@@ -31,9 +31,9 @@ export default function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose:
         />
       )}
       <aside
-        className={`fixed lg:static top-0 bottom-0 z-50 w-64 bg-primary-900 dark:bg-gray-900 text-white transition-all duration-300 border-r border-transparent dark:border-gray-800
-          ${isOpen ? 'translate-x-0' : 'translate-x-full'} lg:translate-x-0
-          ${lang === 'en' ? 'right-0 lg:right-auto' : 'right-0'}`}
+        className={`fixed lg:static top-0 bottom-0 z-50 w-64 bg-primary-900 dark:bg-gray-900 text-white transition-transform duration-300 border-e border-transparent dark:border-gray-800
+          ${lang === 'ar' ? 'right-0' : 'left-0'}
+          ${isOpen ? 'translate-x-0' : lang === 'ar' ? 'translate-x-full' : '-translate-x-full'} lg:translate-x-0`}
       >
         <div className="flex items-center justify-between px-6 h-16 border-b border-primary-700/40 dark:border-gray-800">
           <div className="flex items-center gap-3">

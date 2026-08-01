@@ -7,6 +7,9 @@ import type { LucideIcon } from 'lucide-react'
 
 const tabs = ['medicalHistory', 'medications', 'notes', 'files'] as const
 type Tab = (typeof tabs)[number]
+const fieldClass =
+  'w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500'
+
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
@@ -74,15 +77,15 @@ export default function PatientDetail() {
       </button>
 
       <div className="card flex flex-col md:flex-row md:items-center gap-6">
-        <div className="w-20 h-20 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 text-2xl font-bold">
+        <div className="w-20 h-20 rounded-full bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center text-primary-700 dark:text-primary-300 text-2xl font-bold">
           {patient.name.charAt(0)}
         </div>
         <div className="flex-1">
-          <h2 className="text-2xl font-bold text-gray-900">{patient.name}</h2>
-          <p className="text-sm text-gray-500 mt-1">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{patient.name}</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             {t('bloodType')}: {patient.bloodType || '-'} · {t('age')}: {patient.age}
           </p>
-          <div className="flex flex-wrap gap-4 mt-4 text-sm text-gray-600">
+          <div className="flex flex-wrap gap-4 mt-4 text-sm text-gray-600 dark:text-gray-400">
             <span className="flex items-center gap-1.5"><Activity className="w-4 h-4 text-primary-500" />{patient.condition}</span>
             <span>{t('contact')}: {patient.phone}</span>
             <span>{t('allergies')}: {patient.allergies?.length ? patient.allergies.join(', ') : t('noRecords')}</span>
@@ -91,7 +94,7 @@ export default function PatientDetail() {
       </div>
 
       <div className="card p-2 overflow-hidden">
-        <div className="flex border-b border-gray-100 overflow-x-auto justify-between pr-4">
+        <div className="flex border-b border-gray-100 dark:border-gray-700 overflow-x-auto justify-between pr-4">
           <div className="flex">
             {tabs.map((tab) => {
               const Icon = tabIcons[tab]
@@ -99,14 +102,14 @@ export default function PatientDetail() {
                 <button
                   key={tab}
                   onClick={() => { setActiveTab(tab); setShowForm(false) }}
-                  className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab ? 'border-primary-600 text-primary-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                  className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab ? 'border-primary-600 text-primary-700 dark:text-primary-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
                 >
                   <Icon className="w-4 h-4" /> {t(tab as TranslationKey)}
                 </button>
               )
             })}
           </div>
-          <button onClick={() => setShowForm(!showForm)} className="self-center px-3 py-1.5 bg-primary-50 text-primary-600 text-sm font-medium rounded-lg hover:bg-primary-100 flex items-center gap-1">
+          <button onClick={() => setShowForm(!showForm)} className="self-center px-3 py-1.5 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 text-sm font-medium rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/50 flex items-center gap-1">
             <Plus className="w-4 h-4" /> {t('addRecord')}
           </button>
         </div>
@@ -116,20 +119,20 @@ export default function PatientDetail() {
           {activeTab === 'medicalHistory' && (
             <div className="space-y-4">
               {showForm && (
-                <div className="p-4 bg-gray-50 rounded-xl space-y-3 mb-6">
-                  <input type="text" placeholder={t('visitTitle')} value={formTitle} onChange={e => setFormTitle(e.target.value)} className="w-full px-3 py-2 rounded-lg border text-sm" />
-                  <input type="date" value={formDate} onChange={e => setFormDate(e.target.value)} className="w-full px-3 py-2 rounded-lg border text-sm" />
-                  <textarea placeholder={t('clinicalNotes')} value={formText} onChange={e => setFormText(e.target.value)} className="w-full px-3 py-2 rounded-lg border text-sm h-20" />
+                <div className="p-4 bg-gray-50 dark:bg-gray-700/40 rounded-xl space-y-3 mb-6">
+                  <input type="text" placeholder={t('visitTitle')} value={formTitle} onChange={e => setFormTitle(e.target.value)} className={fieldClass} />
+                  <input type="date" value={formDate} onChange={e => setFormDate(e.target.value)} className={fieldClass} />
+                  <textarea placeholder={t('clinicalNotes')} value={formText} onChange={e => setFormText(e.target.value)} className={`${fieldClass} h-20`} />
                   <button onClick={handleSaveVisit} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm">{t('saveVisit')}</button>
                 </div>
               )}
               {visits.data?.length ? visits.data.map((item) => (
                 <div key={item.id} className="border-l-4 border-primary-500 pl-4 py-2">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <h4 className="font-semibold text-gray-900">{item.title}</h4>
+                    <h4 className="font-semibold text-gray-900 dark:text-gray-100">{item.title}</h4>
                     <span className="text-xs text-gray-400">{item.date}</span>
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">{item.notes}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{item.notes}</p>
                 </div>
               )) : <p className="text-gray-400 text-center py-8">{t('noRecords')}</p>}
             </div>
@@ -139,19 +142,19 @@ export default function PatientDetail() {
           {activeTab === 'medications' && (
             <div className="space-y-3">
               {showForm && (
-                <div className="p-4 bg-gray-50 rounded-xl space-y-3 mb-6">
-                  <input type="text" placeholder={t('medicationName')} value={formTitle} onChange={e => setFormTitle(e.target.value)} className="w-full px-3 py-2 rounded-lg border text-sm" />
-                  <input type="text" placeholder={t('dosage')} value={formText} onChange={e => setFormText(e.target.value)} className="w-full px-3 py-2 rounded-lg border text-sm" />
-                  <input type="date" value={formDate} onChange={e => setFormDate(e.target.value)} className="w-full px-3 py-2 rounded-lg border text-sm" />
+                <div className="p-4 bg-gray-50 dark:bg-gray-700/40 rounded-xl space-y-3 mb-6">
+                  <input type="text" placeholder={t('medicationName')} value={formTitle} onChange={e => setFormTitle(e.target.value)} className={fieldClass} />
+                  <input type="text" placeholder={t('dosage')} value={formText} onChange={e => setFormText(e.target.value)} className={fieldClass} />
+                  <input type="date" value={formDate} onChange={e => setFormDate(e.target.value)} className={fieldClass} />
                   <button onClick={handleSaveMed} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm">{t('saveMedication')}</button>
                 </div>
               )}
               {medications.data?.length ? medications.data.map((med) => (
-                <div key={med.id} className="flex items-start gap-3 p-4 rounded-xl bg-gray-50">
-                  <Pill className="w-5 h-5 text-primary-600 mt-0.5" />
+                <div key={med.id} className="flex items-start gap-3 p-4 rounded-xl bg-gray-50 dark:bg-gray-700/40">
+                  <Pill className="w-5 h-5 text-primary-600 dark:text-primary-400 mt-0.5" />
                   <div>
-                    <h4 className="font-medium text-gray-900">{med.name}</h4>
-                    <p className="text-sm text-gray-500">
+                    <h4 className="font-medium text-gray-900 dark:text-gray-100">{med.name}</h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       {med.dosage} · {t('startDate')}: {med.startDate}
                     </p>
                   </div>
@@ -164,14 +167,14 @@ export default function PatientDetail() {
           {activeTab === 'notes' && (
             <div className="space-y-3">
               {showForm && (
-                <div className="p-4 bg-gray-50 rounded-xl space-y-3 mb-6">
-                  <textarea placeholder={t('writeNote')} value={formText} onChange={e => setFormText(e.target.value)} className="w-full px-3 py-2 rounded-lg border text-sm h-24" />
+                <div className="p-4 bg-gray-50 dark:bg-gray-700/40 rounded-xl space-y-3 mb-6">
+                  <textarea placeholder={t('writeNote')} value={formText} onChange={e => setFormText(e.target.value)} className={`${fieldClass} h-24`} />
                   <button onClick={handleSaveNote} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm">{t('saveNote')}</button>
                 </div>
               )}
               {notes.data?.length ? notes.data.map((note) => (
-                <div key={note.id} className="p-4 rounded-xl bg-amber-50 text-amber-900">
-                  <span className="text-xs text-amber-700/70 font-medium block mb-1">{note.date}</span>
+                <div key={note.id} className="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-200">
+                  <span className="text-xs text-amber-700/70 dark:text-amber-400/80 font-medium block mb-1">{note.date}</span>
                   {note.text}
                 </div>
               )) : <p className="text-gray-400 text-center py-8">{t('noRecords')}</p>}

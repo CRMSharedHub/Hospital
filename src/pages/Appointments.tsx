@@ -27,7 +27,7 @@ const filters = ['all', 'confirmed', 'pending', 'completed', 'cancelled'] as con
 type Filter = (typeof filters)[number]
 
 export default function Appointments() {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const { data: appointments = [] } = useAppointments()
   const { data: doctors = [] } = useDoctors()
   const { data: patients = [] } = usePatients()
@@ -146,6 +146,8 @@ export default function Appointments() {
           <FullCalendar
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
             initialView="timeGridWeek"
+            direction={lang === 'ar' ? 'rtl' : 'ltr'}
+            locale={lang === 'ar' ? 'ar' : 'en'}
             headerToolbar={{
               left: 'prev,next today',
               center: 'title',
