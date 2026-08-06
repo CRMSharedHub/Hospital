@@ -1,13 +1,11 @@
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import { X } from 'lucide-react'
 import { useI18n } from '../i18n'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { appointmentSchema, type AppointmentFormValues } from '../lib/validation'
 import { buildAppointment, hasConflict, type AppointmentDraft } from '../lib/appointments'
 import type { Appointment, Doctor, Patient } from '../types'
-
-type FormState = Record<keyof AppointmentDraft, string>
-type FormErrors = Partial<Record<keyof AppointmentDraft, string>>
-
-const emptyForm: FormState = { patientId: '', doctorId: '', date: '', time: '' }
 
 export interface AppointmentModalProps {
   isOpen: boolean
@@ -27,34 +25,29 @@ export default function AppointmentModal({
   onSave,
 }: AppointmentModalProps) {
   const { t } = useI18n()
-  const [form, setForm] = useState<FormState>(emptyForm)
-  const [errors, setErrors] = useState<FormErrors>({})
   const [conflict, setConflict] = useState('')
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<AppointmentFormValues>({
+    resolver: zodResolver(appointmentSchema),
+  })
 
   if (!isOpen) return null
 
-  const selectedPatient = patients.find((p) => String(p.id) === form.patientId)
-  const selectedDoctor = doctors.find((d) => String(d.id) === form.doctorId)
-
-  const validate = (): boolean => {
-    const next: FormErrors = {}
-    if (!selectedPatient) next.patientId = t('requiredField')
-    if (!selectedDoctor) next.doctorId = t('requiredField')
-    if (!form.date) next.date = t('requiredField')
-    if (!form.time) next.time = t('requiredField')
-    setErrors(next)
-    return Object.keys(next).length === 0
-  }
-
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    if (!validate() || !selectedPatient || !selectedDoctor) return
+  const onSubmit = (data: AppointmentFormValues) => {
+    const selectedPatient = patients.find((p) => String(p.id) === data.patientId)
+    const selectedDoctor = doctors.find((d) => String(d.id) === data.doctorId)
+    if (!selectedPatient || !selectedDoctor) return
 
     const draft: AppointmentDraft = {
       patientId: selectedPatient.id,
       doctorId: selectedDoctor.id,
-      date: form.date,
-      time: form.time,
+      date: data.date,
+      time: data.time,
     }
 
     if (hasConflict(existingAppointments, draft)) {
@@ -64,14 +57,12 @@ export default function AppointmentModal({
     setConflict('')
 
     onSave(buildAppointment(draft, selectedPatient, selectedDoctor))
-    setForm(emptyForm)
-    setErrors({})
+    reset()
     onClose()
   }
 
   const handleClose = () => {
-    setForm(emptyForm)
-    setErrors({})
+    reset()
     setConflict('')
     onClose()
   }
@@ -89,7 +80,7 @@ export default function AppointmentModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
           {conflict && (
             <div
               role="alert"
@@ -108,10 +99,8 @@ export default function AppointmentModal({
             </label>
             <select
               id="appointment-patient"
-              value={form.patientId}
-              onChange={(e) => setForm({ ...form, patientId: e.target.value })}
-              className={`w-full px-3 py-2 rounded-lg border text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.patientId ? 'border-red-300' : 'border-gray-200 dark:border-gray-700'
-                }`}
+              {...register('patientId')}
+              className={`w-full px-3 py-2 rounded-lg border text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.patientId ? 'border-red-300' : 'border-gray-200 dark:border-gray-700'}`}
             >
               <option value="">--</option>
               {patients.map((p) => (
@@ -120,7 +109,7 @@ export default function AppointmentModal({
                 </option>
               ))}
             </select>
-            {errors.patientId && <p className="text-xs text-red-600 mt-1">{errors.patientId}</p>}
+            {errors.patientId && <p className="text-xs text-red-600 mt-1">{errors.patientId.message}</p>}
           </div>
 
           <div>
@@ -132,10 +121,8 @@ export default function AppointmentModal({
             </label>
             <select
               id="appointment-doctor"
-              value={form.doctorId}
-              onChange={(e) => setForm({ ...form, doctorId: e.target.value })}
-              className={`w-full px-3 py-2 rounded-lg border text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.doctorId ? 'border-red-300' : 'border-gray-200 dark:border-gray-700'
-                }`}
+              {...register('doctorId')}
+              className={`w-full px-3 py-2 rounded-lg border text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.doctorId ? 'border-red-300' : 'border-gray-200 dark:border-gray-700'}`}
             >
               <option value="">--</option>
               {doctors.map((doc) => (
@@ -144,7 +131,7 @@ export default function AppointmentModal({
                 </option>
               ))}
             </select>
-            {errors.doctorId && <p className="text-xs text-red-600 mt-1">{errors.doctorId}</p>}
+            {errors.doctorId && <p className="text-xs text-red-600 mt-1">{errors.doctorId.message}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -158,12 +145,10 @@ export default function AppointmentModal({
               <input
                 id="appointment-date"
                 type="date"
-                value={form.date}
-                onChange={(e) => setForm({ ...form, date: e.target.value })}
-                className={`w-full px-3 py-2 rounded-lg border text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.date ? 'border-red-300' : 'border-gray-200 dark:border-gray-700'
-                  }`}
+                {...register('date')}
+                className={`w-full px-3 py-2 rounded-lg border text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.date ? 'border-red-300' : 'border-gray-200 dark:border-gray-700'}`}
               />
-              {errors.date && <p className="text-xs text-red-600 mt-1">{errors.date}</p>}
+              {errors.date && <p className="text-xs text-red-600 mt-1">{errors.date.message}</p>}
             </div>
             <div>
               <label
@@ -175,12 +160,10 @@ export default function AppointmentModal({
               <input
                 id="appointment-time"
                 type="time"
-                value={form.time}
-                onChange={(e) => setForm({ ...form, time: e.target.value })}
-                className={`w-full px-3 py-2 rounded-lg border text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.time ? 'border-red-300' : 'border-gray-200 dark:border-gray-700'
-                  }`}
+                {...register('time')}
+                className={`w-full px-3 py-2 rounded-lg border text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.time ? 'border-red-300' : 'border-gray-200 dark:border-gray-700'}`}
               />
-              {errors.time && <p className="text-xs text-red-600 mt-1">{errors.time}</p>}
+              {errors.time && <p className="text-xs text-red-600 mt-1">{errors.time.message}</p>}
             </div>
           </div>
 

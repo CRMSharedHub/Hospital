@@ -1,4 +1,4 @@
-import type { Appointment, Patient } from '../types'
+import type { Appointment, Patient, Invoice, Medicine, PharmacyOrder, LabTest } from '../types'
 
 export interface SeedAppointment {
   id: number
@@ -140,3 +140,97 @@ export const patientRecords: Record<number, PatientRecord> = {
     ],
   },
 }
+
+// ── Billing seed data ────────────────────────────────────
+export const seedInvoices: Invoice[] = [
+  {
+    id: 1,
+    patientId: 101,
+    patientName: 'أحمد محمد',
+    date: '2026-07-18',
+    items: [
+      { description: 'Cardiology Consultation', quantity: 1, unitPrice: 300 },
+      { description: 'ECG Test', quantity: 1, unitPrice: 150 },
+    ],
+    status: 'paid',
+    paidAmount: 450,
+  },
+  {
+    id: 2,
+    patientId: 102,
+    patientName: 'Laila Hassan',
+    date: '2026-07-18',
+    items: [
+      { description: 'Routine Checkup', quantity: 1, unitPrice: 200 },
+    ],
+    status: 'unpaid',
+    paidAmount: 0,
+  },
+  {
+    id: 3,
+    patientId: 103,
+    patientName: 'Khalid Al-Rashid',
+    date: '2026-07-10',
+    items: [
+      { description: 'Diabetes Follow-up', quantity: 1, unitPrice: 250 },
+      { description: 'HbA1c Lab Test', quantity: 1, unitPrice: 120 },
+      { description: 'Metformin 500mg (60 tabs)', quantity: 1, unitPrice: 45 },
+    ],
+    status: 'partial',
+    paidAmount: 200,
+  },
+  {
+    id: 4,
+    patientId: 105,
+    patientName: 'Hana Saeed',
+    date: '2026-07-15',
+    items: [
+      { description: 'Cardiology Review', quantity: 1, unitPrice: 300 },
+      { description: 'ECG Test', quantity: 1, unitPrice: 150 },
+      { description: 'Stress Test', quantity: 1, unitPrice: 400 },
+    ],
+    status: 'unpaid',
+    paidAmount: 0,
+  },
+  {
+    id: 5,
+    patientId: 101,
+    patientName: 'أحمد محمد',
+    date: '2026-08-01',
+    items: [
+      { description: 'Follow-up Consultation', quantity: 1, unitPrice: 180 },
+    ],
+    status: 'unpaid',
+    paidAmount: 0,
+    currency: 'USD',
+  },
+]
+
+// ── Pharmacy seed data ───────────────────────────────────
+export const seedMedicines: Medicine[] = [
+  { id: 1, name: 'Amlodipine 5mg', category: 'Cardiology', stock: 480, unitPrice: 0.5, expiryDate: '2027-06-30' },
+  { id: 2, name: 'Metformin 500mg', category: 'Diabetes', stock: 1200, unitPrice: 0.3, expiryDate: '2027-03-15' },
+  { id: 3, name: 'Atorvastatin 20mg', category: 'Cardiology', stock: 350, unitPrice: 0.8, expiryDate: '2027-01-20' },
+  { id: 4, name: 'Cetirizine 10mg', category: 'Allergy', stock: 60, unitPrice: 0.4, expiryDate: '2026-12-10' },
+  { id: 5, name: 'Paracetamol 500mg', category: 'Analgesic', stock: 2000, unitPrice: 0.1, expiryDate: '2028-05-01' },
+  { id: 6, name: 'Amoxicillin 500mg', category: 'Antibiotic', stock: 0, unitPrice: 0.6, expiryDate: '2027-09-30' },
+  { id: 7, name: 'Omeprazole 20mg', category: 'Gastro', stock: 180, unitPrice: 0.5, expiryDate: '2027-04-15' },
+  { id: 8, name: 'Insulin Glargine', category: 'Diabetes', stock: 90, unitPrice: 15, expiryDate: '2026-11-30' },
+]
+
+export const seedPharmacyOrders: PharmacyOrder[] = [
+  { id: 1, patientId: 101, patientName: 'أحمد محمد', medicineId: 1, medicineName: 'Amlodipine 5mg', quantity: 30, date: '2026-07-18', status: 'dispensed' },
+  { id: 2, patientId: 103, patientName: 'Khalid Al-Rashid', medicineId: 2, medicineName: 'Metformin 500mg', quantity: 60, date: '2026-07-10', status: 'dispensed' },
+  { id: 3, patientId: 104, patientName: 'Noor Abdullah', medicineId: 4, medicineName: 'Cetirizine 10mg', quantity: 20, date: '2026-07-18', status: 'pending' },
+  { id: 4, patientId: 105, patientName: 'Hana Saeed', medicineId: 3, medicineName: 'Atorvastatin 20mg', quantity: 30, date: '2026-07-15', status: 'pending' },
+]
+
+// ── Lab seed data ────────────────────────────────────────
+export const seedLabTests: LabTest[] = [
+  { id: 1, patientId: 101, patientName: 'أحمد محمد', testName: 'Lipid Panel', category: 'Cardiology', date: '2026-07-18', status: 'completed', result: 'Cholesterol 210 mg/dL, LDL 130 mg/dL, HDL 45 mg/dL' },
+  { id: 2, patientId: 102, patientName: 'Laila Hassan', testName: 'Complete Blood Count', category: 'Hematology', date: '2026-07-18', status: 'in-progress' },
+  { id: 3, patientId: 103, patientName: 'Khalid Al-Rashid', testName: 'HbA1c', category: 'Diabetes', date: '2026-07-10', status: 'completed', result: 'HbA1c 6.8% (Normal < 5.7%)' },
+  { id: 4, patientId: 104, patientName: 'Noor Abdullah', testName: 'Allergy Panel (IgE)', category: 'Immunology', date: '2026-07-18', status: 'ordered' },
+  { id: 5, patientId: 105, patientName: 'Hana Saeed', testName: 'ECG', category: 'Cardiology', date: '2026-07-15', status: 'completed', result: 'Normal sinus rhythm, no abnormalities detected' },
+  { id: 6, patientId: 105, patientName: 'Hana Saeed', testName: 'Stress Test', category: 'Cardiology', date: '2026-07-18', status: 'ordered' },
+]

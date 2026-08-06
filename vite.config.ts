@@ -13,8 +13,11 @@ export default defineConfig({
       },
     }),
   ],
+  ssr: {
+    noExternal: ['@tanstack/react-query', 'react-router-dom'],
+  },
   build: {
-    chunkSizeWarningLimit: 400,
+    chunkSizeWarningLimit: 500,
     rollupOptions: {
       output: {
         manualChunks: {
@@ -27,6 +30,11 @@ export default defineConfig({
             '@fullcalendar/interaction',
           ],
           forms: ['react-hook-form', '@hookform/resolvers', 'zod'],
+          supabase: ['@supabase/supabase-js'],
+          icons: ['lucide-react'],
+          state: ['zustand'],
+          ui: ['sonner', 'clsx', 'tailwind-merge'],
+          offline: ['dexie'],
         },
       },
     },

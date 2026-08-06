@@ -25,11 +25,20 @@ function readStoredLang(): Language {
   }
 }
 
+export function detectLang(): Language {
+  return readStoredLang()
+}
+
+/** Translate outside of React (bootstrap code, error boundaries above the provider). */
+export function translate(key: TranslationKey, lang: Language = readStoredLang()): string {
+  return dictionaries[lang][key]
+}
+
 const I18nContext = createContext<I18nValue>({
   lang: 'ar',
   t: (key) => dictionaries.ar[key],
-  toggleLang: () => {},
-  setLang: () => {},
+  toggleLang: () => { },
+  setLang: () => { },
 })
 
 export function I18nProvider({ children }: { children: ReactNode }) {
