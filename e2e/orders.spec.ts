@@ -1,4 +1,4 @@
-import { test, expect, login } from './fixtures'
+import { test, expect, login, selectLabeledOption } from './fixtures'
 
 test.describe('CPOE Orders', () => {
   test('doctor can open orders page and see seed orders', async ({ page }) => {
@@ -11,7 +11,7 @@ test.describe('CPOE Orders', () => {
   test('doctor can place a lab order', async ({ page }) => {
     await login(page, 'doctor@cityhospital.com', 'doctor123')
     await page.goto('/orders')
-    await page.locator('select').first().selectOption({ index: 1 })
+    await selectLabeledOption(page, /patients|المرضى/i, 1)
     await page.locator('label').filter({ hasText: /description|الوصف/i }).locator('input').fill('CBC panel')
     await page.getByRole('button', { name: /place order|إصدار الأمر/i }).click()
     await expect(page.getByText(/CBC panel/i).first()).toBeVisible({ timeout: 10000 })

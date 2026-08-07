@@ -35,6 +35,21 @@ export async function logout(page: Page) {
   await page.waitForURL('**/login')
 }
 
+/** Select a non-empty option in a labeled <select>, waiting for options to load.
+ * Avoids Header facility filter which is often the first <select> on the page. */
+export async function selectLabeledOption(
+  page: Page,
+  labelPattern: RegExp,
+  optionIndex = 1,
+) {
+  const select = page.locator('label').filter({ hasText: labelPattern }).locator('select')
+  await expect(select).toBeVisible({ timeout: 15_000 })
+  await expect
+    .poll(async () => select.locator('option').count(), { timeout: 15_000 })
+    .toBeGreaterThan(optionIndex)
+  await select.selectOption({ index: optionIndex })
+}
+
 export const test = base.extend<{
   authPage: Page
 }>({

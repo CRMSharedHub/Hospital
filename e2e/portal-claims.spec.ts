@@ -1,4 +1,4 @@
-import { test, expect, login } from './fixtures'
+import { test, expect, login, selectLabeledOption } from './fixtures'
 
 test.describe('Portal & Claims', () => {
   test('patient can open portal and see bills', async ({ page }) => {
@@ -22,8 +22,10 @@ test.describe('Portal & Claims', () => {
     await login(page, 'admin@cityhospital.com', 'admin123')
     await page.goto('/claims')
     await expect(page.getByRole('heading', { name: /claims|المطالبات/i })).toBeVisible()
-    await page.locator('select').first().selectOption({ index: 1 })
-    await page.getByRole('button', { name: /create claim|إنشاء مطالبة/i }).click()
+    await selectLabeledOption(page, /invoice|فاتورة/i, 1)
+    const createBtn = page.getByRole('button', { name: /create claim|إنشاء مطالبة/i })
+    await expect(createBtn).toBeEnabled({ timeout: 10_000 })
+    await createBtn.click()
     await expect(page.getByText(/claim #|مطالبة #/i).first()).toBeVisible({ timeout: 10_000 })
   })
 
@@ -37,8 +39,10 @@ test.describe('Portal & Claims', () => {
   test('admin can post remittance after claim submit', async ({ page }) => {
     await login(page, 'admin@cityhospital.com', 'admin123')
     await page.goto('/claims')
-    await page.locator('select').first().selectOption({ index: 1 })
-    await page.getByRole('button', { name: /create claim|إنشاء مطالبة/i }).click()
+    await selectLabeledOption(page, /invoice|فاتورة/i, 1)
+    const createBtn = page.getByRole('button', { name: /create claim|إنشاء مطالبة/i })
+    await expect(createBtn).toBeEnabled({ timeout: 10_000 })
+    await createBtn.click()
     await expect(page.getByText(/claim #|مطالبة #/i).first()).toBeVisible({ timeout: 10_000 })
     await page.getByRole('button', { name: /submit claim|إرسال المطالبة/i }).first().click()
     await page.getByRole('button', { name: /post remittance|ترحيل تسوية/i }).first().click()
