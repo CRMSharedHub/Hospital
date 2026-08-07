@@ -1,12 +1,13 @@
-import { useState, type FormEvent } from 'react'
 import { X } from 'lucide-react'
 import { useI18n } from '../i18n'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
+import { doctorSchema } from '../lib/validation'
 import type { Doctor } from '../types'
 
-type FormState = { name: string; specialty: string; rating: string; patients: string }
-type FormErrors = Partial<Record<keyof FormState, string>>
-
-const emptyForm: FormState = { name: '', specialty: '', rating: '', patients: '' }
+type DoctorFormInput = z.input<typeof doctorSchema>
+type DoctorFormValues = z.output<typeof doctorSchema>
 
 export interface AddDoctorModalProps {
   isOpen: boolean
@@ -16,39 +17,32 @@ export interface AddDoctorModalProps {
 
 export default function AddDoctorModal({ isOpen, onClose, onSave }: AddDoctorModalProps) {
   const { t } = useI18n()
-  const [form, setForm] = useState<FormState>(emptyForm)
-  const [errors, setErrors] = useState<FormErrors>({})
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<DoctorFormInput, unknown, DoctorFormValues>({
+    resolver: zodResolver(doctorSchema),
+  })
 
   if (!isOpen) return null
 
-  const validate = (): boolean => {
-    const next: FormErrors = {}
-    if (!form.name.trim()) next.name = t('requiredField')
-    if (!form.specialty.trim()) next.specialty = t('requiredField')
-    if (!form.rating) next.rating = t('requiredField')
-    if (!form.patients) next.patients = t('requiredField')
-    setErrors(next)
-    return Object.keys(next).length === 0
-  }
-
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    if (!validate()) return
+  const onSubmit = (data: DoctorFormValues) => {
     onSave({
-      name: form.name,
-      specialty: form.specialty,
+      name: data.name,
+      specialty: data.specialty,
       available: true,
-      rating: Number(form.rating),
-      patients: Number(form.patients),
+      rating: data.rating,
+      patients: data.patients,
     })
-    setForm(emptyForm)
-    setErrors({})
+    reset()
     onClose()
   }
 
   const handleClose = () => {
-    setForm(emptyForm)
-    setErrors({})
+    reset()
     onClose()
   }
 
@@ -65,27 +59,25 @@ export default function AddDoctorModal({ isOpen, onClose, onSave }: AddDoctorMod
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('name')}</label>
             <input
               type="text"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              {...register('name')}
               className={`w-full px-3 py-2 rounded-lg border text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.name ? 'border-red-300' : 'border-gray-200 dark:border-gray-700'}`}
             />
-            {errors.name && <p className="text-xs text-red-600 mt-1">{errors.name}</p>}
+            {errors.name && <p className="text-xs text-red-600 mt-1">{errors.name.message}</p>}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('specialty')}</label>
             <input
               type="text"
-              value={form.specialty}
-              onChange={(e) => setForm({ ...form, specialty: e.target.value })}
+              {...register('specialty')}
               className={`w-full px-3 py-2 rounded-lg border text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.specialty ? 'border-red-300' : 'border-gray-200 dark:border-gray-700'}`}
             />
-            {errors.specialty && <p className="text-xs text-red-600 mt-1">{errors.specialty}</p>}
+            {errors.specialty && <p className="text-xs text-red-600 mt-1">{errors.specialty.message}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -96,22 +88,20 @@ export default function AddDoctorModal({ isOpen, onClose, onSave }: AddDoctorMod
                 step="0.1"
                 min="0"
                 max="5"
-                value={form.rating}
-                onChange={(e) => setForm({ ...form, rating: e.target.value })}
+                {...register('rating')}
                 className={`w-full px-3 py-2 rounded-lg border text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.rating ? 'border-red-300' : 'border-gray-200 dark:border-gray-700'}`}
               />
-              {errors.rating && <p className="text-xs text-red-600 mt-1">{errors.rating}</p>}
+              {errors.rating && <p className="text-xs text-red-600 mt-1">{errors.rating.message}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('patientsCount')}</label>
               <input
                 type="number"
                 min="0"
-                value={form.patients}
-                onChange={(e) => setForm({ ...form, patients: e.target.value })}
+                {...register('patients')}
                 className={`w-full px-3 py-2 rounded-lg border text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.patients ? 'border-red-300' : 'border-gray-200 dark:border-gray-700'}`}
               />
-              {errors.patients && <p className="text-xs text-red-600 mt-1">{errors.patients}</p>}
+              {errors.patients && <p className="text-xs text-red-600 mt-1">{errors.patients.message}</p>}
             </div>
           </div>
 

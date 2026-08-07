@@ -1,0 +1,35 @@
+name: Ops checklist
+
+on:
+  push:
+    paths:
+      - 'supabase/**'
+      - 'scripts/ops-automate.mjs'
+      - 'docs/ops/**'
+      - '.github/workflows/ops-checklist.yml'
+  pull_request:
+    paths:
+      - 'supabase/**'
+      - 'scripts/ops-automate.mjs'
+      - 'docs/ops/**'
+  workflow_dispatch:
+
+jobs:
+  ops-print:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify SQL order files exist
+        run: node scripts/ops-automate.mjs print
+      - name: Fail if any SQL file missing
+        run: |
+          missing=0
+          while IFS= read -r line; do
+            case "$line" in
+              *"MISSING"*) missing=1; echo "$line" ;;
+            esac
+          done < <(node scripts/ops-automate.mjs print)
+          exit $missing

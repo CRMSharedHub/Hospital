@@ -7,20 +7,52 @@ import {
   Settings,
   X,
   Activity,
+  Receipt,
+  Pill,
+  FlaskConical,
+  BedDouble,
+  ClipboardList,
+  Syringe,
+  BarChart3,
+  ScrollText,
+  FileText,
+  CreditCard,
+  Cable,
+  MessageSquare,
+  Building2,
+  ShieldCheck,
 } from 'lucide-react'
 import { useI18n, type TranslationKey } from '../i18n'
 import type { LucideIcon } from 'lucide-react'
+import { usePermission } from '../auth/usePermission'
+import type { Permission } from '../auth/permissions'
 
-const navItems: { to: string; icon: LucideIcon; key: TranslationKey }[] = [
-  { to: '/', icon: LayoutDashboard, key: 'dashboard' },
-  { to: '/patients', icon: Users, key: 'patients' },
-  { to: '/doctors', icon: Stethoscope, key: 'doctors' },
-  { to: '/appointments', icon: CalendarDays, key: 'appointments' },
-  { to: '/settings', icon: Settings, key: 'settings' },
+const navItems: { to: string; icon: LucideIcon; key: TranslationKey; permission: Permission }[] = [
+  { to: '/', icon: LayoutDashboard, key: 'dashboard', permission: 'dashboard:view' },
+  { to: '/patients', icon: Users, key: 'patients', permission: 'patients:view' },
+  { to: '/doctors', icon: Stethoscope, key: 'doctors', permission: 'doctors:view' },
+  { to: '/appointments', icon: CalendarDays, key: 'appointments', permission: 'appointments:view' },
+  { to: '/billing', icon: Receipt, key: 'billing', permission: 'billing:view' },
+  { to: '/claims', icon: FileText, key: 'claims', permission: 'claims:view' },
+  { to: '/portal', icon: CreditCard, key: 'portal', permission: 'portal:view' },
+  { to: '/messages', icon: MessageSquare, key: 'messages', permission: 'messages:view' },
+  { to: '/interop', icon: Cable, key: 'interop', permission: 'interop:view' },
+  { to: '/facilities', icon: Building2, key: 'facilities', permission: 'facilities:view' },
+  { to: '/compliance', icon: ShieldCheck, key: 'compliance', permission: 'compliance:view' },
+  { to: '/pharmacy', icon: Pill, key: 'pharmacy', permission: 'pharmacy:view' },
+  { to: '/lab', icon: FlaskConical, key: 'lab', permission: 'lab:view' },
+  { to: '/census', icon: BedDouble, key: 'census', permission: 'census:view' },
+  { to: '/orders', icon: ClipboardList, key: 'orders', permission: 'orders:view' },
+  { to: '/emar', icon: Syringe, key: 'emar', permission: 'emar:view' },
+  { to: '/reports', icon: BarChart3, key: 'reports', permission: 'reports:view' },
+  { to: '/audit-log', icon: ScrollText, key: 'auditLog', permission: 'auditLog:view' },
+  { to: '/settings', icon: Settings, key: 'settings', permission: 'settings:view' },
 ]
 
 export default function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { t, lang } = useI18n()
+  const { can } = usePermission()
+  const visibleItems = navItems.filter((item) => can(item.permission))
 
   return (
     <>
@@ -28,9 +60,12 @@ export default function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose:
         <div
           className="fixed inset-0 bg-black/40 z-40 lg:hidden"
           onClick={onClose}
+          aria-hidden="true"
         />
       )}
       <aside
+        role="navigation"
+        aria-label={t('mainNavigation')}
         className={`fixed lg:static top-0 bottom-0 z-50 w-64 bg-primary-900 dark:bg-gray-900 text-white transition-transform duration-300 border-e border-transparent dark:border-gray-800
           ${lang === 'ar' ? 'right-0' : 'left-0'}
           ${isOpen ? 'translate-x-0' : lang === 'ar' ? 'translate-x-full' : '-translate-x-full'} lg:translate-x-0`}
@@ -42,13 +77,13 @@ export default function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose:
             </div>
             <span className="font-bold text-lg">{t('appName')}</span>
           </div>
-          <button onClick={onClose} className="lg:hidden p-1 hover:bg-white/10 rounded">
+          <button onClick={onClose} className="lg:hidden p-1 hover:bg-white/10 rounded" aria-label={t('closeMenu')}>
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <nav className="p-4 space-y-2">
-          {navItems.map((item) => (
+          {visibleItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

@@ -3,8 +3,13 @@ import { useAuthStore } from './authStore'
 
 describe('authStore', () => {
   beforeEach(() => {
-    // Reset state before each test
-    useAuthStore.setState({ user: null, isAuthenticated: false })
+    useAuthStore.setState({
+      user: null,
+      isAuthenticated: false,
+      sessionReady: true,
+      sessionBound: false,
+      mfaVerified: false,
+    })
   })
 
   it('should have initial state', () => {
@@ -17,6 +22,8 @@ describe('authStore', () => {
     const initial = useAuthStore.getInitialState()
     expect(initial.user).toBeNull()
     expect(initial.isAuthenticated).toBe(false)
+    expect(initial.sessionBound).toBe(false)
+    expect(initial.mfaVerified).toBe(false)
   })
 
   it('should login user correctly', () => {
@@ -27,14 +34,29 @@ describe('authStore', () => {
       role: 'admin' as const,
     }
 
-    useAuthStore.getState().login(user)
+    useAuthStore.getState().login(user, { mfaVerified: true })
 
     const state = useAuthStore.getState()
     expect(state.user).toEqual(user)
     expect(state.isAuthenticated).toBe(true)
+    expect(state.sessionBound).toBe(true)
+    expect(state.mfaVerified).toBe(true)
   })
 
-  it('should logout user correctly', () => {
+  it('clearLocalAuth drops user without requiring signOut', () => {
+    useAuthStore.getState().login({
+      id: '1',
+      name: 'Test User',
+      email: 'test@example.com',
+      role: 'admin',
+    }, { mfaVerified: true })
+    useAuthStore.getState().clearLocalAuth()
+    expect(useAuthStore.getState().isAuthenticated).toBe(false)
+    expect(useAuthStore.getState().sessionBound).toBe(false)
+    expect(useAuthStore.getState().mfaVerified).toBe(false)
+  })
+
+  it('should logout user correctly', async () => {
     const user = {
       id: '1',
       name: 'Test User',
@@ -43,10 +65,11 @@ describe('authStore', () => {
     }
 
     useAuthStore.getState().login(user)
-    useAuthStore.getState().logout()
+    await useAuthStore.getState().logout()
 
     const state = useAuthStore.getState()
     expect(state.user).toBeNull()
     expect(state.isAuthenticated).toBe(false)
+    expect(state.sessionBound).toBe(false)
   })
 })

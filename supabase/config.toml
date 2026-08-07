@@ -1,0 +1,16 @@
+# Edge Functions config
+# Deploy medical-files with JWT verification enabled (default).
+
+[functions.medical-files]
+verify_jwt = true
+
+# Cron callers use x-cron-secret; admin JWT also allowed inside the function.
+[functions.retention-purge]
+verify_jwt = false
+
+# Payments: JWT validated inside for create/confirm; Stripe webhook uses signature header.
+[functions.payments]
+verify_jwt = false
+
+[functions.fhir-r4]
+verify_jwt = true

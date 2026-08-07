@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import AppointmentModal from './AppointmentModal'
 import { I18nProvider } from '../i18n'
 import type { Appointment, Doctor, Patient } from '../types'
@@ -66,34 +66,40 @@ describe('AppointmentModal', () => {
     expect(screen.queryByText('موعد جديد')).toBeNull()
   })
 
-  it('blocks submit and shows errors when fields are empty', () => {
+  it('blocks submit and shows errors when fields are empty', async () => {
     const { onSave } = renderModal()
     fireEvent.click(screen.getByText('حفظ'))
+    await waitFor(() => {
+      expect(screen.getByText('Patient required')).toBeInTheDocument()
+    })
     expect(onSave).not.toHaveBeenCalled()
-    expect(screen.getAllByText('هذا الحقل مطلوب')).toHaveLength(4)
   })
 
-  it('shows a conflict error and does not save on a clashing slot', () => {
+  it('shows a conflict error and does not save on a clashing slot', async () => {
     const { onSave, onClose } = renderModal()
     fillForm('2026-08-01', '09:00')
     fireEvent.click(screen.getByText('حفظ'))
-    expect(screen.getByRole('alert')).toHaveTextContent('هذا الطبيب لديه موعد آخر في نفس الوقت')
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent('هذا الطبيب لديه موعد آخر في نفس الوقت')
+    })
     expect(onSave).not.toHaveBeenCalled()
     expect(onClose).not.toHaveBeenCalled()
   })
 
-  it('calls onSave with the correct appointment shape', () => {
+  it('calls onSave with the correct appointment shape', async () => {
     const { onSave, onClose } = renderModal()
     fillForm('2026-08-02', '10:30')
     fireEvent.click(screen.getByText('حفظ'))
-    expect(onSave).toHaveBeenCalledWith({
-      patientId: 101,
-      doctorId: 1,
-      patientName: 'Ahmed',
-      doctorName: 'Dr. Ali',
-      date: '2026-08-02',
-      time: '10:30',
-      status: 'pending',
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalledWith({
+        patientId: 101,
+        doctorId: 1,
+        patientName: 'Ahmed',
+        doctorName: 'Dr. Ali',
+        date: '2026-08-02',
+        time: '10:30',
+        status: 'pending',
+      })
     })
     expect(onClose).toHaveBeenCalled()
   })

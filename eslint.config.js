@@ -14,6 +14,9 @@ export default tseslint.config(
       'test-results/**',
       'node_modules/**',
       '.worktrees/**',
+      'public/**',
+      'e2e/**',
+      'playwright.config.ts',
     ],
   },
   js.configs.recommended,
@@ -36,9 +39,16 @@ export default tseslint.config(
     },
   },
   {
-    files: ['**/*.config.{js,ts}', '**/*.cjs'],
+    files: ['**/*.config.{js,ts}', '**/*.cjs', 'scripts/**/*.{js,mjs,cjs}', 'server/**/*.{js,ts}'],
     languageOptions: {
       globals: { ...globals.node },
+    },
+  },
+  {
+    // Deno Edge Functions — Node-like globals; skip React rules
+    files: ['supabase/functions/**/*.{ts,js}'],
+    languageOptions: {
+      globals: { ...globals.deno, ...globals.node },
     },
   },
   prettier,

@@ -1,30 +1,8 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { Toaster } from 'sonner'
-import App from './App'
-import { seedDatabase } from './lib/seed'
-import './index.css'
+// This file is kept for backward compatibility with tests and tooling.
+// The actual client entry point is now src/entry-client.tsx (uses hydrateRoot for SSR).
+// src/entry-server.tsx provides the server-side render function.
+//
+// For development without SSR: npm run dev (uses Vite SPA mode with entry-client.tsx)
+// For development with SSR:    npm run dev:ssr (uses Express + Vite middleware)
+// For production SSR build:    npm run build:ssr && npm start
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: false,
-      refetchOnWindowFocus: false,
-    },
-  },
-})
-
-seedDatabase().then(() => {
-  ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-    <React.StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <App />
-          <Toaster richColors position="top-center" />
-        </BrowserRouter>
-      </QueryClientProvider>
-    </React.StrictMode>,
-  )
-})

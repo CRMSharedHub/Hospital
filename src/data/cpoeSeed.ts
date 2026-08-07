@@ -1,0 +1,43 @@
+import type { ClinicalOrder } from '../types'
+
+export const SEED_CLINICAL_ORDERS: ClinicalOrder[] = [
+  {
+    id: 1,
+    patientId: 103,
+    patientName: 'Khalid Al-Rashid',
+    orderType: 'lab',
+    status: 'ordered',
+    priority: 'routine',
+    description: 'HbA1c',
+    code: '4548-4',
+    orderedBy: 'Dr Demo',
+    orderedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 2,
+    patientId: 101,
+    patientName: 'أحمد محمد',
+    orderType: 'pharmacy',
+    status: 'ordered',
+    priority: 'routine',
+    description: 'Amlodipine 5mg',
+    medicineId: 1,
+    quantity: 30,
+    orderedBy: 'Dr Demo',
+    orderedAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+    linkedPharmacyOrderId: 1,
+  },
+  {
+    id: 3,
+    patientId: 105,
+    patientName: 'Hana Saeed',
+    orderType: 'imaging',
+    status: 'ordered',
+    priority: 'urgent',
+    description: 'Chest X-ray',
+    code: '71045',
+    orderedBy: 'Dr Demo',
+    orderedAt: new Date().toISOString(),
+    notes: 'Rule out acute findings',
+  },
+]

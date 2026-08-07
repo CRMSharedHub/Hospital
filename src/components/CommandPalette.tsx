@@ -42,8 +42,8 @@ export default function CommandPalette() {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[10vh] bg-black/50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden border border-gray-100 dark:border-gray-700">
+    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[10vh] bg-black/50 p-4" role="dialog" aria-modal="true" aria-label={t('search')} onClick={() => setIsOpen(false)}>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden border border-gray-100 dark:border-gray-700" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center px-4 py-3 border-b border-gray-100 dark:border-gray-700">
           <Search className="w-5 h-5 text-gray-400" />
           <input
@@ -51,10 +51,11 @@ export default function CommandPalette() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={t('search')}
+            placeholder={t('searchPlaceholder')}
+            aria-label={t('search')}
             className="flex-1 bg-transparent border-0 focus:ring-0 text-base text-gray-900 dark:text-white px-3 py-1 outline-none"
           />
-          <button onClick={() => setIsOpen(false)} className="p-1 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+          <button onClick={() => setIsOpen(false)} className="p-1 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700" aria-label={t('closeMenu')}>
             <X className="w-5 h-5" />
           </button>
         </div>

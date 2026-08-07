@@ -1,24 +1,26 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { User } from '../types'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
-/**
- * DEMO-ONLY AUTHENTICATION.
- *
- * This store holds an identity in browser storage and nothing more. It provides
- * no security: there is no server, no session, no password verification beyond a
- * hardcoded local comparison, and every record lives unencrypted in IndexedDB on
- * the client. Anyone with access to the browser can read or edit all data.
- *
- * Real authentication (server-side sessions, hashed credentials, RBAC, audit
- * logging) is Phase 1 work and MUST land before any real patient data is
- * entered.
- */
 interface AuthState {
   user: User | null
   isAuthenticated: boolean
-  login: (user: User) => void
-  logout: () => void
+  /** False until syncAuthWithServerSession (or demo bootstrap) completes. */
+  sessionReady: boolean
+  /** True only when auth is backed by a live server session (or allowed demo login). */
+  sessionBound: boolean
+  /**
+   * MFA satisfied for this browser session.
+   * Supabase: AAL2. Demo: local TOTP verify. Not persisted.
+   */
+  mfaVerified: boolean
+  login: (user: User, options?: { sessionBound?: boolean; mfaVerified?: boolean }) => void
+  logout: () => Promise<void>
+  clearLocalAuth: () => void
+  markSessionReady: (ready: boolean) => void
+  markSessionBound: (bound: boolean) => void
+  markMfaVerified: (verified: boolean) => void
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -26,15 +28,54 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       isAuthenticated: false,
-      login: (user) => set({ user, isAuthenticated: true }),
-      logout: () => set({ user: null, isAuthenticated: false }),
+      sessionReady: false,
+      sessionBound: false,
+      mfaVerified: false,
+      login: (user, options) =>
+        set({
+          user,
+          isAuthenticated: true,
+          sessionBound: options?.sessionBound ?? true,
+          sessionReady: true,
+          mfaVerified: options?.mfaVerified ?? false,
+        }),
+      clearLocalAuth: () =>
+        set({
+          user: null,
+          isAuthenticated: false,
+          sessionBound: false,
+          mfaVerified: false,
+        }),
+      markSessionReady: (ready) => set({ sessionReady: ready }),
+      markSessionBound: (bound) => set({ sessionBound: bound }),
+      markMfaVerified: (verified) => set({ mfaVerified: verified }),
+      logout: async () => {
+        if (isSupabaseConfigured && supabase) {
+          await supabase.auth.signOut()
+        }
+        set({
+          user: null,
+          isAuthenticated: false,
+          sessionBound: false,
+          mfaVerified: false,
+          sessionReady: true,
+        })
+      },
     }),
     {
       name: 'auth-storage',
-      version: 2,
-      // v1 shipped an auto-logged-in admin. Drop any of that persisted state.
-      migrate: () => ({ user: null, isAuthenticated: false }),
-      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
+      version: 4,
+      migrate: () => ({
+        user: null,
+        isAuthenticated: false,
+        sessionReady: false,
+        sessionBound: false,
+        mfaVerified: false,
+      }),
+      partialize: (state) => ({
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+      }),
     },
   ),
 )
