@@ -21,11 +21,19 @@ function json(body: unknown, status = 200): Response {
   })
 }
 
+function stripMarkers(s: string): string {
+  let out = s
+  if (out.startsWith(VT)) out = out.slice(VT.length)
+  if (out.endsWith(`${FS}\r`)) out = out.slice(0, -2)
+  else if (out.endsWith(FS)) out = out.slice(0, -1)
+  return out
+}
+
 function unframe(raw: string): string {
   const vt = raw.indexOf(VT)
   const fs = raw.indexOf(FS, vt >= 0 ? vt : 0)
   if (vt >= 0 && fs > vt) return raw.slice(vt + 1, fs)
-  return raw.replace(/^\x0b/, '').replace(/\x1c\r?$/, '')
+  return stripMarkers(raw)
 }
 
 function frame(hl7: string): string {

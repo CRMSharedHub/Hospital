@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { Activity, Mail, Lock, Shield, Stethoscope, HeartPulse, User } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
@@ -68,6 +68,61 @@ export default function Login() {
     }
   }, [demoAllowed, misconfigured])
 
+  const completeLogin = useCallback(
+    (user: UserType, mfaDone = true) => {
+      login(toAuthUser(user), { sessionBound: true, mfaVerified: mfaDone })
+      navigate(from, { replace: true })
+    },
+    [login, navigate, from],
+  )
+
+  const continueAfterAuth = useCallback(
+    async (user: UserType) => {
+      if (!isMFARequired(user.role)) {
+        completeLogin(user, true)
+        return
+      }
+
+      if (serverMfa) {
+        try {
+          const status = await getServerMfaStatus()
+          if (!status.enrolled) {
+            setPendingUser(user)
+            setShowMFASetup(true)
+            setServerEnrolled(false)
+            login(toAuthUser(user), { sessionBound: true, mfaVerified: false })
+            return
+          }
+          if (!status.verified) {
+            setPendingUser(user)
+            setShowMFASetup(false)
+            setServerEnrolled(true)
+            login(toAuthUser(user), { sessionBound: true, mfaVerified: false })
+            return
+          }
+          completeLogin(user, true)
+        } catch (e) {
+          setError(e instanceof Error ? e.message : t('invalidCredentials'))
+        }
+        return
+      }
+
+      // Demo client MFA
+      if (!mfaStore.isEnrolled(user.id)) {
+        setPendingUser(user)
+        setShowMFASetup(true)
+        return
+      }
+      if (!mfaStore.isVerified(user.id)) {
+        setPendingUser(user)
+        setShowMFASetup(false)
+        return
+      }
+      completeLogin(user, true)
+    },
+    [completeLogin, login, mfaStore, serverMfa, t],
+  )
+
   // SSO stub callback: /login?sso=1&email=admin@cityhospital.com
   useEffect(() => {
     if (misconfigured || !demoAllowed) return
@@ -96,8 +151,16 @@ export default function Login() {
     return () => {
       cancelled = true
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot SSO stub
-  }, [location.search, demoAllowed, misconfigured])
+  }, [
+    location.search,
+    demoAllowed,
+    misconfigured,
+    demoUsers,
+    continueAfterAuth,
+    navigate,
+    from,
+    t,
+  ])
 
   const handleSsoStub = () => {
     if (isRealSsoAvailable()) {
@@ -158,55 +221,6 @@ export default function Login() {
     (mfaUser != null &&
       isMFARequired(mfaUser.role) &&
       (serverMfa ? serverEnrolled === false : !(pendingUser ? mfaStore.isEnrolled(pendingUser.id) : isEnrolledStored)))
-
-  const completeLogin = (user: UserType, mfaDone = true) => {
-    login(toAuthUser(user), { sessionBound: true, mfaVerified: mfaDone })
-    navigate(from, { replace: true })
-  }
-
-  const continueAfterAuth = async (user: UserType) => {
-    if (!isMFARequired(user.role)) {
-      completeLogin(user, true)
-      return
-    }
-
-    if (serverMfa) {
-      try {
-        const status = await getServerMfaStatus()
-        if (!status.enrolled) {
-          setPendingUser(user)
-          setShowMFASetup(true)
-          setServerEnrolled(false)
-          login(toAuthUser(user), { sessionBound: true, mfaVerified: false })
-          return
-        }
-        if (!status.verified) {
-          setPendingUser(user)
-          setShowMFASetup(false)
-          setServerEnrolled(true)
-          login(toAuthUser(user), { sessionBound: true, mfaVerified: false })
-          return
-        }
-        completeLogin(user, true)
-      } catch (e) {
-        setError(e instanceof Error ? e.message : t('invalidCredentials'))
-      }
-      return
-    }
-
-    // Demo client MFA
-    if (!mfaStore.isEnrolled(user.id)) {
-      setPendingUser(user)
-      setShowMFASetup(true)
-      return
-    }
-    if (!mfaStore.isVerified(user.id)) {
-      setPendingUser(user)
-      setShowMFASetup(false)
-      return
-    }
-    completeLogin(user, true)
-  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()

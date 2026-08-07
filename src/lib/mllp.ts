@@ -12,9 +12,18 @@ export const MLLP_FS = '\x1c'
 /** Carriage return after FS */
 export const MLLP_CR = '\r'
 
+/** Strip leading VT / trailing FS(+CR) without control-character regexes. */
+function stripMllpMarkers(s: string): string {
+  let out = s
+  if (out.startsWith(MLLP_VT)) out = out.slice(MLLP_VT.length)
+  if (out.endsWith(`${MLLP_FS}${MLLP_CR}`)) out = out.slice(0, -2)
+  else if (out.endsWith(MLLP_FS)) out = out.slice(0, -1)
+  return out
+}
+
 /** Wrap an HL7 message in MLLP framing. */
 export function frameMllp(hl7: string): string {
-  const body = hl7.replace(/^\x0b/, '').replace(/\x1c\r?$/, '')
+  const body = stripMllpMarkers(hl7)
   return `${MLLP_VT}${body}${MLLP_FS}${MLLP_CR}`
 }
 
@@ -26,7 +35,7 @@ export function unframeMllp(framed: string): string {
     return framed.slice(vt + 1, fs)
   }
   // Already bare HL7
-  return framed.replace(/^\x0b/, '').replace(/\x1c\r?$/, '')
+  return stripMllpMarkers(framed)
 }
 
 export function isMllpFramed(s: string): boolean {
