@@ -23,6 +23,7 @@ export async function seedDatabase() {
         lastVisit: p.lastVisit,
         bloodType: patientRecords[p.id]?.bloodType || 'Unknown',
         allergies: patientRecords[p.id]?.allergies || [],
+        facilityId: p.id % 2 === 0 ? 2 : 1,
       })
     }
 
@@ -142,5 +143,56 @@ export async function seedDatabase() {
   const marCount = await db.medicationAdministrations.count()
   if (marCount === 0) {
     for (const m of SEED_MAR) await db.medicationAdministrations.add(m)
+  }
+
+  // Phase D — facilities + compliance checklist
+  const facilityCount = await db.facilities.count()
+  if (facilityCount === 0) {
+    await db.facilities.bulkAdd([
+      {
+        id: 1,
+        code: 'MAIN',
+        name: 'City Hospital — Main Campus',
+        city: 'Riyadh',
+        timezone: 'Asia/Riyadh',
+        active: true,
+      },
+      {
+        id: 2,
+        code: 'NORTH',
+        name: 'City Hospital — North Clinic',
+        city: 'Riyadh',
+        timezone: 'Asia/Riyadh',
+        active: true,
+      },
+    ])
+  }
+
+  const complianceCount = await db.complianceAttestations.count()
+  if (complianceCount === 0) {
+    const now = new Date().toISOString()
+    await db.complianceAttestations.bulkAdd([
+      { id: 1, key: 'baa_signed', label: 'Business Associate Agreement (BAA) signed with vendors', status: 'pending', updatedAt: now },
+      { id: 2, key: 'encryption_at_rest', label: 'PHI encryption at rest (KMS / Edge secrets)', status: 'in_progress', updatedAt: now },
+      { id: 3, key: 'encryption_in_transit', label: 'TLS everywhere (app, API, storage)', status: 'done', updatedAt: now },
+      { id: 4, key: 'access_control', label: 'RBAC + MFA for privileged roles', status: 'done', updatedAt: now },
+      { id: 5, key: 'audit_logging', label: 'Immutable audit log for PHI access', status: 'done', updatedAt: now },
+      { id: 6, key: 'retention_policy', label: 'Data retention & purge schedule active', status: 'in_progress', updatedAt: now },
+      { id: 7, key: 'breach_plan', label: 'Incident / breach response playbook', status: 'pending', updatedAt: now },
+      { id: 8, key: 'workforce_training', label: 'Workforce HIPAA/privacy training', status: 'pending', updatedAt: now },
+      { id: 9, key: 'dlp_exports', label: 'DLP redaction on exports / downloads', status: 'done', updatedAt: now },
+      { id: 10, key: 'sso_scim', label: 'SSO + SCIM lifecycle for workforce accounts', status: 'pending', updatedAt: now },
+    ])
+  }
+
+  const membershipCount = await db.facilityMemberships.count()
+  if (membershipCount === 0) {
+    await db.facilityMemberships.bulkAdd([
+      { id: 1, userId: '1', facilityId: 1, role: 'admin' },
+      { id: 2, userId: '1', facilityId: 2, role: 'admin' },
+      { id: 3, userId: '2', facilityId: 1, role: 'doctor' },
+      { id: 4, userId: '3', facilityId: 1, role: 'nurse' },
+      { id: 5, userId: '3', facilityId: 2, role: 'nurse' },
+    ])
   }
 }

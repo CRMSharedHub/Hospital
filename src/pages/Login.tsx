@@ -11,6 +11,7 @@ import { isMFARequired } from '../lib/mfa'
 import { MFAVerify, MFASetup } from '../components/MFAVerify'
 import { isDemoAuthAllowed, isProductionMisconfigured } from '../lib/runtimeConfig'
 import { getServerMfaStatus, usesServerMfa } from '../lib/supabaseMfa'
+import { startSsoLogin, completeSsoCallback, isRealSsoAvailable, startSupabaseOAuth } from '../lib/sso'
 import type { LucideIcon } from 'lucide-react'
 import type { User as UserType } from '../types'
 
@@ -66,6 +67,54 @@ export default function Login() {
       cancelled = true
     }
   }, [demoAllowed, misconfigured])
+
+  // SSO stub callback: /login?sso=1&email=admin@cityhospital.com
+  useEffect(() => {
+    if (misconfigured || !demoAllowed) return
+    const params = new URLSearchParams(location.search)
+    const result = completeSsoCallback(params)
+    if (!result.ok || !result.email) return
+
+    let cancelled = false
+    void (async () => {
+      const users = demoUsers.length ? demoUsers : await loadDemoUsers()
+      const match = users.find((u) => u.email === result.email)
+      if (!match || cancelled) {
+        if (!cancelled) setError(result.message)
+        return
+      }
+      setLoading(true)
+      try {
+        await continueAfterAuth(toAuthUser(match))
+        navigate(from, { replace: true })
+      } catch {
+        if (!cancelled) setError(t('invalidCredentials'))
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot SSO stub
+  }, [location.search, demoAllowed, misconfigured])
+
+  const handleSsoStub = () => {
+    if (isRealSsoAvailable()) {
+      void startSupabaseOAuth().then((r) => {
+        if (r.error) setError(r.error)
+      })
+      return
+    }
+    const started = startSsoLogin('oidc')
+    const back = new URLSearchParams({
+      sso: '1',
+      stub: '1',
+      email: email.trim() || 'admin@cityhospital.com',
+      state: started.state,
+    })
+    navigate(`/login?${back.toString()}`, { replace: true })
+  }
 
   const mfaOkForStored =
     !storedUser ||
@@ -297,6 +346,17 @@ export default function Login() {
               {loading ? '...' : t('signIn')}
             </button>
           </form>
+
+          {(demoAllowed || isRealSsoAvailable()) && !misconfigured && (
+            <button
+              type="button"
+              onClick={handleSsoStub}
+              disabled={loading}
+              className="mt-3 w-full flex justify-center py-2.5 px-4 border border-gray-200 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+            >
+              {isRealSsoAvailable() ? t('continueWithSsoLive') : t('continueWithSso')}
+            </button>
+          )}
 
           {demoAllowed && !misconfigured && demoUsers.length > 0 && (
             <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700">

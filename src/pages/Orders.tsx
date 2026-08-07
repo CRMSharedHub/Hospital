@@ -59,7 +59,7 @@ export default function Orders() {
   )
   const openCount = countOpenOrders(orders)
 
-  const buildPayload = (acknowledgeAllergy?: boolean) => {
+  const buildPayload = (acknowledgeAllergy?: boolean, acknowledgeDrugInteraction?: boolean) => {
     const patient = patients.find((p) => p.id === Number(patientId))
     if (!patient) throw new Error('Patient required')
     const parsed = clinicalOrderSchema.safeParse({
@@ -89,13 +89,14 @@ export default function Orders() {
       orderedBy: userName,
       notes: parsed.data.notes,
       acknowledgeAllergy,
+      acknowledgeDrugInteraction,
     }
   }
 
-  const submit = async (acknowledgeAllergy?: boolean) => {
+  const submit = async (acknowledgeCds?: boolean) => {
     setFormError('')
     try {
-      const payload = buildPayload(acknowledgeAllergy)
+      const payload = buildPayload(acknowledgeCds, acknowledgeCds)
       await placeOrder.mutateAsync(payload)
       setPendingAllergy(null)
       setDescription('')
@@ -104,7 +105,14 @@ export default function Orders() {
       setMedicineId('')
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed'
-      if (msg.startsWith('Possible allergy conflict')) {
+      if (
+        msg.startsWith('Possible allergy conflict') ||
+        msg.includes('bleeding risk') ||
+        msg.includes('Serotonin') ||
+        msg.includes('Hyperkalemia') ||
+        msg.includes('myopathy') ||
+        msg.includes('metformin')
+      ) {
         setPendingAllergy(msg)
       } else {
         setFormError(msg)
@@ -196,7 +204,7 @@ export default function Orders() {
             <div className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-900/20 p-3 text-sm text-amber-900 dark:text-amber-200 space-y-2">
               <p className="flex items-start gap-2"><AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />{pendingAllergy}</p>
               <button type="button" onClick={() => void submit(true)} className="px-3 py-1.5 rounded-lg bg-amber-600 text-white text-sm">
-                {t('acknowledgeAllergy')}
+                {t('acknowledgeCds')}
               </button>
             </div>
           )}

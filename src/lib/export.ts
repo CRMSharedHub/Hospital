@@ -1,8 +1,10 @@
+import { redactRecords } from './dlp'
+import { dal } from './dal'
+
 type ExportableRecord = Record<string, unknown>
 
 /**
  * Convert an array of objects to CSV string.
- * Handles nested objects by JSON-stringifying them.
  */
 export function toCSV(data: ExportableRecord[], columns?: string[]): string {
   if (data.length === 0) return ''
@@ -11,7 +13,6 @@ export function toCSV(data: ExportableRecord[], columns?: string[]): string {
   const escapeCell = (val: unknown): string => {
     if (val === null || val === undefined) return ''
     const str = typeof val === 'object' ? JSON.stringify(val) : String(val)
-    // Escape quotes and wrap in quotes if contains comma, quote, or newline
     if (str.includes(',') || str.includes('"') || str.includes('\n')) {
       return `"${str.replace(/"/g, '""')}"`
     }
@@ -23,9 +24,6 @@ export function toCSV(data: ExportableRecord[], columns?: string[]): string {
   return [header, ...rows].join('\n')
 }
 
-/**
- * Trigger a file download in the browser.
- */
 export function downloadFile(content: string, filename: string, mimeType: string): void {
   const blob = new Blob([content], { type: mimeType })
   const url = URL.createObjectURL(blob)
@@ -38,25 +36,46 @@ export function downloadFile(content: string, filename: string, mimeType: string
   URL.revokeObjectURL(url)
 }
 
-/**
- * Export data as CSV file.
- */
-export function exportCSV(data: ExportableRecord[], filename: string, columns?: string[]): void {
-  const csv = toCSV(data, columns)
-  downloadFile(csv, filename, 'text/csv;charset=utf-8;')
+async function auditExport(kind: 'csv' | 'json', filename: string, rowCount: number, dlp: boolean) {
+  try {
+    await dal.logAudit('export', 'downloads', filename, { kind, rowCount, dlp })
+  } catch {
+    // non-fatal — export should still succeed offline
+  }
 }
 
-/**
- * Export data as JSON file.
- */
-export function exportJSON(data: unknown, filename: string): void {
-  const json = JSON.stringify(data, null, 2)
-  downloadFile(json, filename, 'application/json')
+/** Export data as CSV — DLP redaction on by default (Phase D). */
+export function exportCSV(
+  data: ExportableRecord[],
+  filename: string,
+  columns?: string[],
+  opts?: { dlp?: boolean; audit?: boolean },
+): void {
+  const dlp = opts?.dlp !== false
+  const rows = dlp ? redactRecords(data) : data
+  downloadFile(toCSV(rows, columns), filename, 'text/csv;charset=utf-8;')
+  if (opts?.audit !== false) {
+    void auditExport('csv', filename, rows.length, dlp)
+  }
 }
 
-/**
- * Generate a timestamped filename.
- */
+/** Export data as JSON — DLP redaction on by default for arrays. */
+export function exportJSON(data: unknown, filename: string, opts?: { dlp?: boolean; audit?: boolean }): void {
+  const dlp = opts?.dlp !== false
+  let payload = data
+  let rowCount = 0
+  if (dlp && Array.isArray(data)) {
+    payload = redactRecords(data as ExportableRecord[])
+    rowCount = (payload as unknown[]).length
+  } else if (Array.isArray(data)) {
+    rowCount = data.length
+  }
+  downloadFile(JSON.stringify(payload, null, 2), filename, 'application/json')
+  if (opts?.audit !== false) {
+    void auditExport('json', filename, rowCount, dlp)
+  }
+}
+
 export function timestampedFilename(prefix: string, ext: string): string {
   const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
   return `${prefix}_${ts}.${ext}`

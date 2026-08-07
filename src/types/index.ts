@@ -6,6 +6,37 @@ export interface User {
   avatar?: string
   /** Linked patients.id when role is patient (Supabase profiles.linked_patient_id). */
   linkedPatientId?: number
+  /** Active facility for multi-facility staff sessions (Phase D). */
+  activeFacilityId?: number
+  /** Facilities this user may access. */
+  facilityIds?: number[]
+}
+
+export interface Facility {
+  id: number
+  code: string
+  name: string
+  city?: string
+  timezone: string
+  active: boolean
+}
+
+export interface FacilityMembership {
+  id: number
+  userId: string
+  facilityId: number
+  role: 'admin' | 'doctor' | 'nurse' | 'staff'
+}
+
+export type ComplianceStatus = 'pending' | 'in_progress' | 'done' | 'na'
+
+export interface ComplianceAttestation {
+  id: number
+  key: string
+  label: string
+  status: ComplianceStatus
+  notes?: string
+  updatedAt: string
 }
 
 export interface Patient {
@@ -17,6 +48,7 @@ export interface Patient {
   lastVisit: string
   bloodType: string
   allergies: string[]
+  facilityId?: number
 }
 
 export interface Doctor {

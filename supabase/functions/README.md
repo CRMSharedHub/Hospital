@@ -44,3 +44,13 @@ supabase functions deploy mllp-ingest
 supabase functions deploy nphies
 ```
 
+## scim + kms-unwrap (Phase D)
+
+See `docs/ops/PHASE_D_ENTERPRISE.md`.
+
+```bash
+supabase secrets set SCIM_TOKEN="..."
+supabase functions deploy scim --no-verify-jwt
+supabase functions deploy kms-unwrap
+```
+

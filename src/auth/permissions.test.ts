@@ -65,6 +65,14 @@ describe('ROLE_PERMISSIONS', () => {
     expect(ROLE_PERMISSIONS.doctor).toContain('messages:edit')
     expect(getRoutePermission('/messages')).toBe('messages:view')
   })
+
+  it('admin can manage facilities and compliance', () => {
+    expect(ROLE_PERMISSIONS.admin).toContain('facilities:edit')
+    expect(ROLE_PERMISSIONS.admin).toContain('compliance:view')
+    expect(ROLE_PERMISSIONS.patient).not.toContain('facilities:view')
+    expect(getRoutePermission('/facilities')).toBe('facilities:view')
+    expect(getRoutePermission('/compliance')).toBe('compliance:view')
+  })
 })
 
 describe('hasPermission', () => {

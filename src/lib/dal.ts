@@ -23,12 +23,17 @@ import type {
   ClinicalOrder,
   MedicationAdministration,
   PatientMessage,
+  Facility,
+  FacilityMembership,
+  ComplianceAttestation,
 } from '../types'
 import { invoiceStatusAfterPayment } from './billingMath'
 import { canAdmitPatient, canAdmitToBed } from './adt'
 import { hasAnyVitalMeasurement, canResolveProblem } from './clinicalChart'
 import { canPlaceOrder, checkDrugAllergyAlert } from './cpoe'
+import { checkDrugDrugInteractions, formatDrugInteractionAlert } from './cds'
 import { canAdminister } from './emar'
+import { filterByFacility, normalizeFacilityCode } from './facility'
 
 // ── Field mapping helpers (snake_case ↔ camelCase) ────────
 function mapPatient(row: Record<string, unknown>): Patient {
@@ -41,6 +46,7 @@ function mapPatient(row: Record<string, unknown>): Patient {
     lastVisit: row.last_visit as string,
     bloodType: row.blood_type as string,
     allergies: row.allergies as string[],
+    facilityId: row.facility_id != null ? Number(row.facility_id) : undefined,
   }
 }
 
@@ -311,13 +317,16 @@ function mapLabTest(row: Record<string, unknown>): LabTest {
 // ── Data Access Layer ──────────────────────────────────────
 export const dal = {
   // ── Patients ─────────────────────────────────────────────
-  async getPatients(): Promise<Patient[]> {
+  async getPatients(facilityId?: number | null): Promise<Patient[]> {
     if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase.from('patients').select('*').order('id')
+      let q = supabase.from('patients').select('*').order('id')
+      if (facilityId != null) q = q.eq('facility_id', facilityId)
+      const { data, error } = await q
       if (error) throw error
-      return data.map(mapPatient)
+      return (data ?? []).map(mapPatient)
     }
-    return db.patients.toArray()
+    const rows = await db.patients.toArray()
+    return filterByFacility(rows, facilityId)
   },
 
   async getPatient(id: number): Promise<Patient | undefined> {
@@ -341,6 +350,7 @@ export const dal = {
           last_visit: patient.lastVisit,
           blood_type: patient.bloodType,
           allergies: patient.allergies,
+          facility_id: patient.facilityId ?? null,
         })
         .select('id')
         .single()
@@ -1284,11 +1294,13 @@ export const dal = {
     orderedBy?: string
     notes?: string
     acknowledgeAllergy?: boolean
-  }): Promise<{ id: number; allergyAlert?: string }> {
+    acknowledgeDrugInteraction?: boolean
+  }): Promise<{ id: number; allergyAlert?: string; drugInteractionAlert?: string }> {
     const err = canPlaceOrder(input)
     if (err) throw new Error(err)
 
     let allergyAlert: string | undefined
+    let drugInteractionAlert: string | undefined
     let medicineName = input.description
     if (input.orderType === 'pharmacy' && input.medicineId) {
       const medicines = await this.getMedicines()
@@ -1301,6 +1313,18 @@ export const dal = {
         allergyAlert = alert
         if (!input.acknowledgeAllergy) {
           throw new Error(alert)
+        }
+      }
+      const activeMeds = await this.getMedications(input.patientId)
+      const interactions = checkDrugDrugInteractions(
+        med.name,
+        activeMeds.map((m) => m.name),
+      )
+      const interactionMsg = formatDrugInteractionAlert(interactions)
+      if (interactionMsg) {
+        drugInteractionAlert = interactionMsg
+        if (!input.acknowledgeDrugInteraction) {
+          throw new Error(interactionMsg)
         }
       }
     }
@@ -1345,7 +1369,7 @@ export const dal = {
       orderedBy: input.orderedBy,
       orderedAt,
       notes: input.notes,
-      allergyAlert,
+      allergyAlert: [allergyAlert, drugInteractionAlert].filter(Boolean).join(' | ') || undefined,
       linkedLabTestId,
       linkedPharmacyOrderId,
     }
@@ -1385,7 +1409,7 @@ export const dal = {
           pharmacyOrderId: linkedPharmacyOrderId,
         })
       }
-      return { id: data.id, allergyAlert }
+      return { id: data.id, allergyAlert: row.allergyAlert, drugInteractionAlert }
     }
 
     const id = await db.clinicalOrders.add(row as ClinicalOrder)
@@ -1401,7 +1425,7 @@ export const dal = {
         pharmacyOrderId: linkedPharmacyOrderId,
       })
     }
-    return { id, allergyAlert }
+    return { id, allergyAlert: row.allergyAlert, drugInteractionAlert }
   },
 
   async updateClinicalOrderStatus(id: number, status: ClinicalOrder['status']): Promise<void> {
@@ -1777,5 +1801,125 @@ export const dal = {
     }
 
     return { deleted, errors }
+  },
+
+  // ── Phase D — Facilities / Compliance ────────────────────
+  async getFacilities(): Promise<Facility[]> {
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase.from('facilities').select('*').order('id')
+      if (error) throw error
+      return (data ?? []).map((r) => ({
+        id: Number(r.id),
+        code: r.code as string,
+        name: r.name as string,
+        city: (r.city as string) || undefined,
+        timezone: (r.timezone as string) || 'UTC',
+        active: r.active !== false,
+      }))
+    }
+    return db.facilities.toArray()
+  },
+
+  async addFacility(input: Omit<Facility, 'id'>): Promise<number> {
+    const code = normalizeFacilityCode(input.code)
+    if (!code) throw new Error('Facility code required')
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from('facilities')
+        .insert({
+          code,
+          name: input.name,
+          city: input.city ?? null,
+          timezone: input.timezone || 'Asia/Riyadh',
+          active: input.active !== false,
+        })
+        .select('id')
+        .single()
+      if (error) throw error
+      return data.id
+    }
+    return db.facilities.add({ ...input, code } as Facility)
+  },
+
+  async getFacilityMemberships(userId?: string): Promise<FacilityMembership[]> {
+    if (isSupabaseConfigured && supabase) {
+      let q = supabase.from('facility_memberships').select('*')
+      if (userId) q = q.eq('user_id', userId)
+      const { data, error } = await q
+      if (error) throw error
+      return (data ?? []).map((r) => ({
+        id: Number(r.id),
+        userId: r.user_id as string,
+        facilityId: Number(r.facility_id),
+        role: r.role as FacilityMembership['role'],
+      }))
+    }
+    let rows = await db.facilityMemberships.toArray()
+    if (userId) rows = rows.filter((m) => m.userId === userId)
+    return rows
+  },
+
+  async addFacilityMembership(input: Omit<FacilityMembership, 'id'>): Promise<number> {
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from('facility_memberships')
+        .insert({
+          user_id: input.userId,
+          facility_id: input.facilityId,
+          role: input.role,
+        })
+        .select('id')
+        .single()
+      if (error) throw error
+      return data.id
+    }
+    const all = await db.facilityMemberships.toArray()
+    const existing = all.find(
+      (m) => m.userId === input.userId && m.facilityId === input.facilityId,
+    )
+    if (existing) return existing.id
+    return db.facilityMemberships.add(input as FacilityMembership)
+  },
+
+  async removeFacilityMembership(id: number): Promise<void> {
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase.from('facility_memberships').delete().eq('id', id)
+      if (error) throw error
+      return
+    }
+    await db.facilityMemberships.delete(id)
+  },
+
+  async getComplianceAttestations(): Promise<ComplianceAttestation[]> {
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase.from('compliance_attestations').select('*').order('id')
+      if (error) throw error
+      return (data ?? []).map((r) => ({
+        id: Number(r.id),
+        key: r.key as string,
+        label: r.label as string,
+        status: r.status as ComplianceAttestation['status'],
+        notes: (r.notes as string) || undefined,
+        updatedAt: (r.updated_at as string) || new Date().toISOString(),
+      }))
+    }
+    return db.complianceAttestations.toArray()
+  },
+
+  async updateComplianceAttestation(
+    id: number,
+    status: ComplianceAttestation['status'],
+    notes?: string,
+  ): Promise<void> {
+    const updatedAt = new Date().toISOString()
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase
+        .from('compliance_attestations')
+        .update({ status, notes: notes ?? null, updated_at: updatedAt })
+        .eq('id', id)
+      if (error) throw error
+      return
+    }
+    await db.complianceAttestations.update(id, { status, notes, updatedAt })
   },
 }

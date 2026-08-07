@@ -18,7 +18,10 @@
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "ops:print": "node scripts/ops-automate.mjs print",
+    "ops:verify-env": "node scripts/ops-automate.mjs verify-env",
+    "ops:deploy-functions": "node scripts/ops-automate.mjs deploy-functions"
   },
   "dependencies": {
     "@fullcalendar/daygrid": "^6.1.21",

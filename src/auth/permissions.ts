@@ -31,6 +31,10 @@ export type Permission =
   | 'settings:view'
   | 'settings:edit'
   | 'users:manage'
+  | 'facilities:view'
+  | 'facilities:edit'
+  | 'compliance:view'
+  | 'compliance:edit'
 
 export type Role = User['role']
 
@@ -51,6 +55,8 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'emar:view', 'emar:edit',
     'reports:view',
     'auditLog:view',
+    'facilities:view', 'facilities:edit',
+    'compliance:view', 'compliance:edit',
     'settings:view', 'settings:edit',
     'users:manage',
   ],
@@ -64,6 +70,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'orders:view', 'orders:edit',
     'emar:view', 'emar:edit',
     'messages:view', 'messages:edit',
+    'facilities:view',
     'reports:view',
     'settings:view',
   ],
@@ -78,6 +85,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'orders:view', 'orders:edit',
     'emar:view', 'emar:edit',
     'messages:view', 'messages:edit',
+    'facilities:view',
     'settings:view',
   ],
   patient: [
@@ -115,6 +123,8 @@ const ROUTE_PERMISSIONS: Record<string, Permission> = {
   '/portal': 'portal:view',
   '/messages': 'messages:view',
   '/interop': 'interop:view',
+  '/facilities': 'facilities:view',
+  '/compliance': 'compliance:view',
   '/pharmacy': 'pharmacy:view',
   '/lab': 'lab:view',
   '/census': 'census:view',

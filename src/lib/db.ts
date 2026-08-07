@@ -22,6 +22,9 @@ import {
   ClinicalOrder,
   MedicationAdministration,
   PatientMessage,
+  Facility,
+  FacilityMembership,
+  ComplianceAttestation,
 } from '../types'
 
 export class HospitalDatabase extends Dexie {
@@ -47,6 +50,9 @@ export class HospitalDatabase extends Dexie {
   clinicalOrders!: Table<ClinicalOrder, number>
   medicationAdministrations!: Table<MedicationAdministration, number>
   patientMessages!: Table<PatientMessage, number>
+  facilities!: Table<Facility, number>
+  facilityMemberships!: Table<FacilityMembership, number>
+  complianceAttestations!: Table<ComplianceAttestation, number>
 
   constructor() {
     super('HospitalDB')
@@ -211,6 +217,33 @@ export class HospitalDatabase extends Dexie {
       clinicalOrders: '++id, patientId, orderType, status, orderedAt',
       medicationAdministrations: '++id, patientId, status, scheduledAt',
       patientMessages: '++id, patientId, createdAt',
+    })
+    this.version(10).stores({
+      patients: '++id, name, phone, facilityId',
+      doctors: '++id, name, specialty',
+      appointments: '++id, patientId, doctorId, date, status',
+      visits: 'id, patientId, doctorId, date',
+      medications: 'id, patientId',
+      notes: 'id, patientId',
+      files: 'id, patientId',
+      invoices: '++id, patientId, date, status',
+      medicines: '++id, name, category',
+      pharmacyOrders: '++id, patientId, medicineId, date, status',
+      labTests: '++id, patientId, date, status',
+      payments: '++id, invoiceId, patientId, status, providerRef',
+      claims: '++id, invoiceId, patientId, status',
+      remittances: '++id, claimId, status',
+      wards: '++id, code',
+      beds: '++id, wardId, status',
+      admissions: '++id, patientId, bedId, wardId, status',
+      vitalSigns: '++id, patientId, recordedAt',
+      problems: '++id, patientId, status',
+      clinicalOrders: '++id, patientId, orderType, status, orderedAt',
+      medicationAdministrations: '++id, patientId, status, scheduledAt',
+      patientMessages: '++id, patientId, createdAt',
+      facilities: '++id, code, active',
+      facilityMemberships: '++id, userId, facilityId',
+      complianceAttestations: '++id, key, status',
     })
   }
 }

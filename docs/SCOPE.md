@@ -305,3 +305,25 @@
     - Patient messaging (`patient_messages`, `/messages`).
     - NPHIES eligibility/claim stubs (`nphies.ts` + Edge `nphies`).
     - Ops: `docs/ops/PHASE_C3_REMAINING.md`, `supabase/phase-c3-remaining.sql`.
+60. **Phase D — Enterprise scale stubs**
+    - Multi-facility: `facilities`, memberships, patient `facility_id`, Header switcher, `/facilities`.
+    - SSO stub on Login + SCIM Edge/client stubs.
+    - KMS status + `kms-unwrap` Edge; DLP redaction on exports.
+    - `/compliance` HIPAA/BAA checklist; ops: `docs/ops/PHASE_D_ENTERPRISE.md`, `supabase/phase-d-enterprise.sql`.
+61. **Automatable ops hardening**
+    - `npm run ops:print|verify-env|deploy-functions` (`scripts/ops-automate.mjs`).
+    - Facility RLS helpers: `phase-d2-facility-rls.sql`.
+    - Real OAuth when `VITE_SSO_PROVIDER` set; SCIM Edge creates/bans Auth users.
+    - CDS drug–drug checks in CPOE; export audit + DLP; compliance auto-detect button.
+    - Docs: `docs/ops/AUTOMATED_OPS.md`.
+62. **Remaining go-live pack**
+    - Facility memberships UI + seed; `phase-d3-facility-clinical-rls.sql`.
+    - `phase-a-cron.sql` (pg_cron retention); `docs/ops/LIVE_CHECKLIST.md`.
+    - Compliance templates: BAA / breach / training under `docs/compliance/`.
+    - CI: `.github/workflows/ops-checklist.yml`.
+61. **Automatable ops follow-ups**
+    - `npm run ops:print|verify-env|deploy-functions` (`scripts/ops-automate.mjs`).
+    - Facility RLS helpers: `phase-d2-facility-rls.sql`.
+    - Real OAuth when `VITE_SSO_PROVIDER` set; SCIM Edge creates/bans Auth users.
+    - CDS drug–drug checks in CPOE; export audit log; compliance auto-detect.
+    - Docs: `docs/ops/AUTOMATED_OPS.md`.

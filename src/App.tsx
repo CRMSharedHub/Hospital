@@ -16,6 +16,8 @@ const Claims = lazy(() => import('./pages/Claims'))
 const Portal = lazy(() => import('./pages/Portal'))
 const Interop = lazy(() => import('./pages/Interop'))
 const Messages = lazy(() => import('./pages/Messages'))
+const Facilities = lazy(() => import('./pages/Facilities'))
+const Compliance = lazy(() => import('./pages/Compliance'))
 const Pharmacy = lazy(() => import('./pages/Pharmacy'))
 const Lab = lazy(() => import('./pages/Lab'))
 const Census = lazy(() => import('./pages/Census'))
@@ -56,6 +58,8 @@ function App() {
               <Route path="portal" element={<Portal />} />
               <Route path="messages" element={<Messages />} />
               <Route path="interop" element={<Interop />} />
+              <Route path="facilities" element={<Facilities />} />
+              <Route path="compliance" element={<Compliance />} />
               <Route path="pharmacy" element={<Pharmacy />} />
               <Route path="lab" element={<Lab />} />
               <Route path="census" element={<Census />} />

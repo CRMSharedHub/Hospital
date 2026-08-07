@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { dal } from './dal'
+import { useFacilityStore } from '../store/facilityStore'
 import type {
   Patient,
   Doctor,
@@ -23,9 +24,10 @@ function onErrorHandler(error: unknown, fallbackMsg: string) {
 
 // Patients
 export const usePatients = () => {
+  const facilityId = useFacilityStore((s) => s.activeFacilityId)
   return useQuery({
-    queryKey: ['patients'],
-    queryFn: () => dal.getPatients(),
+    queryKey: ['patients', facilityId],
+    queryFn: () => dal.getPatients(facilityId),
   })
 }
 
@@ -780,5 +782,84 @@ export const useAuditLog = (limit = 50) => {
   return useQuery({
     queryKey: ['auditLog', limit],
     queryFn: () => dal.getAuditLog(limit),
+  })
+}
+
+// ── Phase D — Facilities / Compliance ────────────────────
+export const useFacilities = () => {
+  return useQuery({
+    queryKey: ['facilities'],
+    queryFn: () => dal.getFacilities(),
+  })
+}
+
+export const useAddFacility = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: Omit<import('../types').Facility, 'id'>) => dal.addFacility(input),
+    onSuccess: async () => {
+      queryClient.invalidateQueries({ queryKey: ['facilities'] })
+      toast.success('Facility added')
+    },
+    onError: (e) => onErrorHandler(e, 'Failed to add facility'),
+  })
+}
+
+export const useFacilityMemberships = () => {
+  return useQuery({
+    queryKey: ['facilityMemberships'],
+    queryFn: () => dal.getFacilityMemberships(),
+  })
+}
+
+export const useAddFacilityMembership = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: Omit<import('../types').FacilityMembership, 'id'>) =>
+      dal.addFacilityMembership(input),
+    onSuccess: async () => {
+      queryClient.invalidateQueries({ queryKey: ['facilityMemberships'] })
+      toast.success('Membership added')
+    },
+    onError: (e) => onErrorHandler(e, 'Failed to add membership'),
+  })
+}
+
+export const useRemoveFacilityMembership = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => dal.removeFacilityMembership(id),
+    onSuccess: async () => {
+      queryClient.invalidateQueries({ queryKey: ['facilityMemberships'] })
+      toast.success('Membership removed')
+    },
+    onError: (e) => onErrorHandler(e, 'Failed to remove membership'),
+  })
+}
+
+export const useComplianceAttestations = () => {
+  return useQuery({
+    queryKey: ['compliance'],
+    queryFn: () => dal.getComplianceAttestations(),
+  })
+}
+
+export const useUpdateCompliance = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      id,
+      status,
+      notes,
+    }: {
+      id: number
+      status: import('../types').ComplianceStatus
+      notes?: string
+    }) => dal.updateComplianceAttestation(id, status, notes),
+    onSuccess: async () => {
+      queryClient.invalidateQueries({ queryKey: ['compliance'] })
+      toast.success('Compliance updated')
+    },
+    onError: (e) => onErrorHandler(e, 'Failed to update compliance'),
   })
 }

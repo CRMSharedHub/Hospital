@@ -19,6 +19,8 @@ import {
   CreditCard,
   Cable,
   MessageSquare,
+  Building2,
+  ShieldCheck,
 } from 'lucide-react'
 import { useI18n, type TranslationKey } from '../i18n'
 import type { LucideIcon } from 'lucide-react'
@@ -35,6 +37,8 @@ const navItems: { to: string; icon: LucideIcon; key: TranslationKey; permission:
   { to: '/portal', icon: CreditCard, key: 'portal', permission: 'portal:view' },
   { to: '/messages', icon: MessageSquare, key: 'messages', permission: 'messages:view' },
   { to: '/interop', icon: Cable, key: 'interop', permission: 'interop:view' },
+  { to: '/facilities', icon: Building2, key: 'facilities', permission: 'facilities:view' },
+  { to: '/compliance', icon: ShieldCheck, key: 'compliance', permission: 'compliance:view' },
   { to: '/pharmacy', icon: Pill, key: 'pharmacy', permission: 'pharmacy:view' },
   { to: '/lab', icon: FlaskConical, key: 'lab', permission: 'lab:view' },
   { to: '/census', icon: BedDouble, key: 'census', permission: 'census:view' },
