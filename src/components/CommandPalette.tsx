@@ -4,6 +4,8 @@ import { Search, Users, Stethoscope, CalendarDays, X } from 'lucide-react'
 import { usePatients, useDoctors, useAppointments } from '../lib/api'
 import { useI18n } from '../i18n'
 
+export const OPEN_COMMAND_PALETTE_EVENT = 'hospital:open-command-palette'
+
 export default function CommandPalette() {
   const { t } = useI18n()
   const navigate = useNavigate()
@@ -24,8 +26,13 @@ export default function CommandPalette() {
         setIsOpen(false)
       }
     }
+    const handleOpen = () => setIsOpen(true)
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    window.addEventListener(OPEN_COMMAND_PALETTE_EVENT, handleOpen)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener(OPEN_COMMAND_PALETTE_EVENT, handleOpen)
+    }
   }, [])
 
   if (!isOpen) return null

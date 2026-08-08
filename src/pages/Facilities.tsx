@@ -10,6 +10,7 @@ import {
 import { useFacilityStore } from '../store/facilityStore'
 import { useAuthStore } from '../store/authStore'
 import { useI18n } from '../i18n'
+import { usePermission } from '../auth/usePermission'
 import { scimCreateUser, scimListUsers, scimDeactivateUser } from '../lib/scim'
 import { toast } from 'sonner'
 import type { FacilityMembership } from '../types'
@@ -22,6 +23,8 @@ const DEMO_STAFF = [
 
 export default function Facilities() {
   const { t } = useI18n()
+  const { can } = usePermission()
+  const canEdit = can('facilities:edit')
   const user = useAuthStore((s) => s.user)
   const { data: facilities = [] } = useFacilities()
   const { data: memberships = [] } = useFacilityMemberships()
@@ -99,6 +102,7 @@ export default function Facilities() {
         </div>
       </div>
 
+      {canEdit && (
       <div className="card p-4 space-y-3">
         <h3 className="font-semibold text-gray-900 dark:text-white">{t('newFacility')}</h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
@@ -130,6 +134,7 @@ export default function Facilities() {
           {t('addFacility')}
         </button>
       </div>
+      )}
 
       <div className="space-y-3">
         {facilities.map((f) => (
@@ -157,6 +162,7 @@ export default function Facilities() {
         ))}
       </div>
 
+      {canEdit && (
       <div className="card p-4 space-y-3">
         <h3 className="font-semibold text-gray-900 dark:text-white">{t('facilityMemberships')}</h3>
         <p className="text-sm text-gray-500">{t('facilityMembershipsHint')}</p>
@@ -221,7 +227,9 @@ export default function Facilities() {
           ))}
         </div>
       </div>
+      )}
 
+      {canEdit && (
       <div className="card p-4 space-y-3">
         <h3 className="font-semibold text-gray-900 dark:text-white">{t('scimProvisioning')}</h3>
         <p className="text-sm text-gray-500">{t('scimHint')}</p>
@@ -237,6 +245,7 @@ export default function Facilities() {
           <pre className="text-xs bg-gray-50 dark:bg-gray-900 p-3 rounded-lg overflow-auto max-h-48">{scimLog}</pre>
         )}
       </div>
+      )}
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { FlaskConical, Microscope, CheckCircle2 } from 'lucide-react'
 import { useLabTests, useUpdateLabTestStatus } from '../lib/api'
 import { useI18n, type TranslationKey } from '../i18n'
+import { usePermission } from '../auth/usePermission'
 import { labResultSchema } from '../lib/validation'
 import type { LabTest } from '../types'
 import StatCard from '../components/StatCard'
@@ -18,6 +19,8 @@ type Filter = (typeof filters)[number]
 
 export default function Lab() {
   const { t } = useI18n()
+  const { can } = usePermission()
+  const canEdit = can('lab:edit')
   const { data: labTests = [] } = useLabTests()
   const updateStatusMutation = useUpdateLabTestStatus()
 
@@ -97,7 +100,7 @@ export default function Lab() {
             </div>
 
             <div className="flex items-center gap-3 self-start sm:self-center">
-              {test.status === 'ordered' && (
+              {canEdit && test.status === 'ordered' && (
                 <button
                   onClick={() => updateStatusMutation.mutate({ id: test.id, status: 'in-progress' })}
                   className="px-3 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-xs font-medium"
@@ -105,7 +108,7 @@ export default function Lab() {
                   {t('inProgress')}
                 </button>
               )}
-              {test.status === 'in-progress' && (
+              {canEdit && test.status === 'in-progress' && (
                 <button
                   onClick={() => {
                     setResultModalId(test.id)
@@ -127,7 +130,7 @@ export default function Lab() {
         )}
       </div>
 
-      {resultModalId !== null && (
+      {resultModalId !== null && canEdit && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setResultModalId(null)}>
           <div className="card max-w-lg w-full space-y-4" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('enterResult')}</h3>

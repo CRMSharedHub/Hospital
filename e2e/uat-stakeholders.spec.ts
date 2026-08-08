@@ -19,9 +19,9 @@ async function dismissDevOverlay(page: Page) {
 
 /** Sidebar settles after auth hydrate + permission filter. */
 async function waitForSidebar(page: Page) {
-  await expect(page.locator('aside[role="navigation"]')).toBeVisible({ timeout: 15_000 })
+  await expect(page.locator('aside nav[aria-label]')).toBeVisible({ timeout: 15_000 })
   await expect
-    .poll(async () => page.locator('aside[role="navigation"] nav a[href]').count(), {
+    .poll(async () => page.locator('aside nav a[href]').count(), {
       timeout: 15_000,
       message: 'sidebar nav links never appeared',
     })
@@ -40,8 +40,8 @@ async function login(page: Page, email: string, password: string) {
 }
 
 function navLink(page: Page, href: string) {
-  // Prefer inner sidebar nav; nested landmarks break getByRole('navigation') chains.
-  return page.locator(`aside[role="navigation"] nav a[href="${href}"]`)
+  // Single nav landmark inside aside (UX-04).
+  return page.locator(`aside nav a[href="${href}"]`)
 }
 
 async function expectNav(page: Page, href: string, shouldShow: boolean) {

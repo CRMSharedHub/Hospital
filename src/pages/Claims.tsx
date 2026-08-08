@@ -13,6 +13,7 @@ import { invoiceTotal, formatMoney } from '../lib/billingMath'
 import { encodeEra835, parseEra835, eraToRemittances } from '../lib/era835'
 import { submitNphiesClaim } from '../lib/nphies'
 import { useI18n, type TranslationKey } from '../i18n'
+import { usePermission } from '../auth/usePermission'
 import type { ClaimStatus } from '../types'
 import { toast } from 'sonner'
 
@@ -26,6 +27,8 @@ const statusStyles: Record<string, string> = {
 
 export default function Claims() {
   const { t } = useI18n()
+  const { can } = usePermission()
+  const canEdit = can('claims:edit')
   const { data: claims = [] } = useClaims()
   const { data: invoices = [] } = useInvoices()
   const { data: remittances = [] } = useRemittances()
@@ -132,6 +135,7 @@ export default function Claims() {
     <div className="space-y-6">
       <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('claims')}</h2>
 
+      {canEdit && (
       <div className="card p-4 space-y-4">
         <h3 className="font-semibold text-gray-900 dark:text-white">{t('newClaim')}</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -184,7 +188,9 @@ export default function Claims() {
           {t('createClaimFromInvoice')}
         </button>
       </div>
+      )}
 
+      {canEdit && (
       <div className="card p-4 space-y-3">
         <h3 className="font-semibold text-gray-900 dark:text-white">{t('importEra')}</h3>
         <p className="text-sm text-gray-500">{t('eraPaste')}</p>
@@ -214,6 +220,7 @@ export default function Claims() {
           </button>
         </div>
       </div>
+      )}
 
       <div className="space-y-3">
         {claims.length === 0 && <p className="text-center text-gray-400 py-8">{t('noClaims')}</p>}
@@ -242,7 +249,7 @@ export default function Claims() {
                 <span className={`px-3 py-1.5 rounded-lg text-xs font-medium ${statusStyles[claim.status]}`}>
                   {t(statusLabel(claim.status))}
                 </span>
-                {claim.status === 'draft' && (
+                {canEdit && claim.status === 'draft' && (
                   <>
                     <button
                       type="button"
@@ -266,7 +273,7 @@ export default function Claims() {
                     </button>
                   </>
                 )}
-                {claim.status === 'submitted' && (
+                {canEdit && claim.status === 'submitted' && (
                   <button
                     type="button"
                     onClick={() => updateStatus.mutate({ id: claim.id, status: 'accepted' })}
@@ -275,7 +282,7 @@ export default function Claims() {
                     {t('acceptClaim')}
                   </button>
                 )}
-                {(claim.status === 'accepted' || claim.status === 'submitted') && (
+                {canEdit && (claim.status === 'accepted' || claim.status === 'submitted') && (
                   <button
                     type="button"
                     onClick={() => handleRemittance(claim.id, claim.payerName, claim.total)}

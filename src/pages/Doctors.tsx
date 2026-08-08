@@ -3,12 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { Stethoscope, Star, Users, Plus } from 'lucide-react'
 import { useDoctors, useAddDoctor } from '../lib/api'
 import { useI18n } from '../i18n'
+import { usePermission } from '../auth/usePermission'
 import AddDoctorModal from '../components/AddDoctorModal'
 import type { Doctor } from '../types'
 
 export default function Doctors() {
   const { t } = useI18n()
   const navigate = useNavigate()
+  const { can } = usePermission()
+  const canEdit = can('doctors:edit')
   const { data: doctors = [] } = useDoctors()
   const addDoctorMutation = useAddDoctor()
   const [modalOpen, setModalOpen] = useState(false)
@@ -21,13 +24,15 @@ export default function Doctors() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('doctors')}</h2>
-        <button
-          onClick={() => setModalOpen(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
-        >
-          <Plus className="w-4 h-4" />
-          {t('addDoctor')}
-        </button>
+        {canEdit && (
+          <button
+            onClick={() => setModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            {t('addDoctor')}
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -65,7 +70,7 @@ export default function Doctors() {
       </div>
 
       <AddDoctorModal
-        isOpen={modalOpen}
+        isOpen={modalOpen && canEdit}
         onClose={() => setModalOpen(false)}
         onSave={handleSave}
       />

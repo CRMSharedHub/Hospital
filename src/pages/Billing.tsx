@@ -5,6 +5,7 @@ import { useInvoices, useUpdateInvoiceStatus } from '../lib/api'
 import { createPaymentSession, confirmMockPayment } from '../lib/paymentsApi'
 import { invoiceTotal, invoiceRemaining, formatMoney } from '../lib/billingMath'
 import { useI18n, type TranslationKey } from '../i18n'
+import { usePermission } from '../auth/usePermission'
 import type { Invoice } from '../types'
 import StatCard from '../components/StatCard'
 import { toast } from 'sonner'
@@ -21,6 +22,8 @@ type Filter = (typeof filters)[number]
 
 export default function Billing() {
   const { t } = useI18n()
+  const { can } = usePermission()
+  const canEdit = can('billing:edit')
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { data: invoices = [] } = useInvoices()
@@ -191,7 +194,7 @@ export default function Billing() {
                     </tfoot>
                   </table>
 
-                  {inv.status !== 'paid' && (
+                  {canEdit && inv.status !== 'paid' && (
                     <div className="mt-4 flex flex-wrap justify-end gap-2">
                       <button
                         onClick={(e) => {

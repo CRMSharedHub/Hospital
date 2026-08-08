@@ -3,6 +3,7 @@ import { Plus, CalendarDays, List, Calendar as CalendarIcon } from 'lucide-react
 import AppointmentModal from '../components/AppointmentModal'
 import { useAppointments, useAddAppointment, useUpdateAppointmentStatus, useDoctors, usePatients } from '../lib/api'
 import { useI18n, type TranslationKey } from '../i18n'
+import { usePermission } from '../auth/usePermission'
 import type { Appointment } from '../types'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
@@ -28,6 +29,8 @@ type Filter = (typeof filters)[number]
 
 export default function Appointments() {
   const { t, lang } = useI18n()
+  const { can } = usePermission()
+  const canEdit = can('appointments:edit')
   const { data: appointments = [] } = useAppointments()
   const { data: doctors = [] } = useDoctors()
   const { data: patients = [] } = usePatients()
@@ -71,13 +74,15 @@ export default function Appointments() {
               <CalendarIcon className="w-4 h-4" />
             </button>
           </div>
-          <button
-            onClick={() => setModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
-          >
-            <Plus className="w-4 h-4" />
-            {t('newAppointment')}
-          </button>
+          {canEdit && (
+            <button
+              onClick={() => setModalOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
+            >
+              <Plus className="w-4 h-4" />
+              {t('newAppointment')}
+            </button>
+          )}
         </div>
       </div>
 
@@ -117,21 +122,28 @@ export default function Appointments() {
               </div>
 
               <div className="flex items-center gap-3 self-start sm:self-center">
-                <select
-                  value={appt.status}
-                  onChange={(e) =>
-                    updateStatusMutation.mutate({
-                      id: appt.id,
-                      status: e.target.value as Appointment['status'],
-                    })
-                  }
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer border border-transparent outline-none ${statusStyles[appt.status]}`}
-                >
-                  <option value="pending" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">{t('pending')}</option>
-                  <option value="confirmed" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">{t('confirmed')}</option>
-                  <option value="completed" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">{t('completed')}</option>
-                  <option value="cancelled" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">{t('cancelled')}</option>
-                </select>
+                {canEdit ? (
+                  <select
+                    value={appt.status}
+                    onChange={(e) =>
+                      updateStatusMutation.mutate({
+                        id: appt.id,
+                        status: e.target.value as Appointment['status'],
+                      })
+                    }
+                    aria-label={t('status')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer border border-transparent outline-none ${statusStyles[appt.status]}`}
+                  >
+                    <option value="pending" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">{t('pending')}</option>
+                    <option value="confirmed" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">{t('confirmed')}</option>
+                    <option value="completed" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">{t('completed')}</option>
+                    <option value="cancelled" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">{t('cancelled')}</option>
+                  </select>
+                ) : (
+                  <span className={`px-3 py-1.5 rounded-lg text-xs font-medium ${statusStyles[appt.status]}`}>
+                    {t(appt.status as TranslationKey)}
+                  </span>
+                )}
               </div>
             </div>
           ))}
@@ -163,7 +175,7 @@ export default function Appointments() {
       )}
 
       <AppointmentModal
-        isOpen={modalOpen}
+        isOpen={modalOpen && canEdit}
         onClose={() => setModalOpen(false)}
         doctors={doctors}
         patients={patients}

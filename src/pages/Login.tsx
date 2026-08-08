@@ -394,14 +394,18 @@ export default function Login() {
                   return (
                     <button
                       key={u.id}
+                      type="button"
+                      title={u.email}
                       onClick={() => handleQuickLogin(u.email, u.password)}
                       disabled={loading}
                       className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-xs disabled:opacity-50"
                     >
                       <Icon className="w-4 h-4 text-primary-500 shrink-0" />
                       <div className="text-left min-w-0">
-                        <p className="font-medium text-gray-700 dark:text-gray-300 truncate">{t(`role_${u.role}`)}</p>
-                        <p className="text-gray-400 dark:text-gray-500 truncate">{u.email}</p>
+                        <p className="font-medium text-gray-700 dark:text-gray-300">{t(`role_${u.role}`)}</p>
+                        <p className="text-gray-400 dark:text-gray-500 font-mono text-[10px] truncate" title={u.email}>
+                          {u.email}
+                        </p>
                       </div>
                     </button>
                   )

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Pill, Package, AlertTriangle } from 'lucide-react'
 import { useMedicines, usePharmacyOrders, useUpdatePharmacyOrderStatus } from '../lib/api'
 import { useI18n, type TranslationKey } from '../i18n'
+import { usePermission } from '../auth/usePermission'
 import type { PharmacyOrder } from '../types'
 import StatCard from '../components/StatCard'
 
@@ -15,6 +16,8 @@ type Tab = 'inventory' | 'orders'
 
 export default function Pharmacy() {
   const { t } = useI18n()
+  const { can } = usePermission()
+  const canEdit = can('pharmacy:edit')
   const { data: medicines = [] } = useMedicines()
   const { data: orders = [] } = usePharmacyOrders()
   const updateOrderStatus = useUpdatePharmacyOrderStatus()
@@ -133,7 +136,7 @@ export default function Pharmacy() {
                 </div>
 
                 <div className="flex items-center gap-3 self-start sm:self-center">
-                  {order.status === 'pending' && (
+                  {canEdit && order.status === 'pending' && (
                     <button
                       onClick={() => updateOrderStatus.mutate({ id: order.id, status: 'dispensed' })}
                       className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-xs font-medium"
