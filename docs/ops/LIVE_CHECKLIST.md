@@ -6,18 +6,24 @@ Repo code + stubs are ready. These steps require **your** Supabase / IdP / legal
 
 ```bash
 npm run ops:print
+npm run ops:check
 npm run ops:verify-env
+npm run ops:gen-secrets          # optional: print random secret values
+npm run ops:bundle-sql           # optional: one-file SQL paste → supabase/APPLY_ALL.sql
 supabase login
 supabase link --project-ref <ref>
 ```
 
 ## 1. SQL (Dashboard → SQL Editor)
 
-Run every file listed by `npm run ops:print` in order (includes `phase-a-cron.sql` last if Pro+).
+**Option A:** Run every file listed by `npm run ops:print` in order (includes `phase-a-cron.sql` last if Pro+).
+
+**Option B (faster paste):** `npm run ops:bundle-sql` then open `supabase/APPLY_ALL.sql` in the SQL Editor.
 
 ## 2. Secrets
 
 ```bash
+npm run ops:gen-secrets   # prints values — copy into the commands below
 supabase secrets set ENCRYPTION_KEY="<min-32-chars>"
 supabase secrets set RETENTION_CRON_SECRET="<random>"
 supabase secrets set SCIM_TOKEN="<random>"

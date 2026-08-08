@@ -205,6 +205,7 @@ export const ar = {
   records: 'سجل',
   online: 'متصل',
   offline: 'غير متصل',
+  offlineLimited: 'غير متصل — عرض بيانات مخزّنة؛ قد لا تُزامَن التعديلات حتى يعود الاتصال',
   syncing: 'جارٍ المزامنة...',
   portal: 'بوابتي',
   myBills: 'فواتيري',

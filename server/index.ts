@@ -7,8 +7,19 @@ import { createServer as createViteServer } from 'vite'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const isProd = process.env.NODE_ENV === 'production'
 
+/** In-memory ring buffers for local / staging observability stubs */
+const errorLog: unknown[] = []
+const vitalsLog: unknown[] = []
+const MAX_LOG = 200
+
+function pushRing(buf: unknown[], item: unknown) {
+  buf.push(item)
+  if (buf.length > MAX_LOG) buf.shift()
+}
+
 async function createServer() {
   const app = express()
+  app.use(express.json({ limit: '256kb' }))
 
   app.get('/health', (_req, res) => {
     res.status(200).json({
@@ -17,6 +28,37 @@ async function createServer() {
       mode: isProd ? 'production' : 'development',
       timestamp: new Date().toISOString(),
     })
+  })
+
+  // Local observability sinks (use when VITE_ERROR_ENDPOINT=/api/errors etc.)
+  app.post('/api/errors', (req, res) => {
+    const entry = { ...req.body, receivedAt: new Date().toISOString() }
+    pushRing(errorLog, entry)
+    if (!isProd) console.error('[api/errors]', entry.message ?? entry)
+    res.status(204).end()
+  })
+
+  app.post('/api/vitals', (req, res) => {
+    const entry = { ...req.body, receivedAt: new Date().toISOString() }
+    pushRing(vitalsLog, entry)
+    if (!isProd) console.debug('[api/vitals]', entry.name, entry.value, entry.rating)
+    res.status(204).end()
+  })
+
+  app.get('/api/errors/recent', (_req, res) => {
+    if (isProd) {
+      res.status(404).end()
+      return
+    }
+    res.json({ count: errorLog.length, items: errorLog.slice(-50) })
+  })
+
+  app.get('/api/vitals/recent', (_req, res) => {
+    if (isProd) {
+      res.status(404).end()
+      return
+    }
+    res.json({ count: vitalsLog.length, items: vitalsLog.slice(-50) })
   })
 
   let vite

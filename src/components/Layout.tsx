@@ -36,9 +36,12 @@ export default function Layout() {
       <div className="flex-1 flex flex-col transition-all duration-300 min-w-0">
         <Header onMenuClick={() => setSidebarOpen(true)} />
         {!isOnline && (
-          <div className="bg-amber-500 text-white px-4 py-2 text-sm flex items-center gap-2 justify-center">
-            <WifiOff className="w-4 h-4" />
-            {t('offline')} — {t('syncing')}
+          <div
+            role="status"
+            className="bg-amber-500 text-white px-4 py-2 text-sm flex items-center gap-2 justify-center"
+          >
+            <WifiOff className="w-4 h-4 shrink-0" />
+            {t('offlineLimited')}
           </div>
         )}
         <main id="main-content" className="flex-1 p-6 overflow-auto" tabIndex={-1}>

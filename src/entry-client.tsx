@@ -86,7 +86,10 @@ configureSessionSyncHooks({
 })
 
 // ── Initialize Web Vitals monitoring ───────────────────────
-const vitalsEndpoint = import.meta.env.VITE_VITALS_ENDPOINT as string | undefined
+// Prefer explicit env; in DEV default to local Vite/SSR sink.
+const vitalsEndpoint =
+  (import.meta.env.VITE_VITALS_ENDPOINT as string | undefined) ||
+  (import.meta.env.DEV ? '/api/vitals' : undefined)
 if (vitalsEndpoint) {
   reportVitalsToEndpoint(vitalsEndpoint)
 } else {

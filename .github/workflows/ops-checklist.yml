@@ -24,12 +24,7 @@ jobs:
           node-version: 22
       - name: Verify SQL order files exist
         run: node scripts/ops-automate.mjs print
-      - name: Fail if any SQL file missing
-        run: |
-          missing=0
-          while IFS= read -r line; do
-            case "$line" in
-              *"MISSING"*) missing=1; echo "$line" ;;
-            esac
-          done < <(node scripts/ops-automate.mjs print)
-          exit $missing
+      - name: Fail if any SQL / Edge source missing
+        run: node scripts/ops-automate.mjs check
+      - name: Bundle SQL (smoke)
+        run: node scripts/ops-automate.mjs bundle-sql

@@ -20,6 +20,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "ops:print": "node scripts/ops-automate.mjs print",
+    "ops:check": "node scripts/ops-automate.mjs check",
+    "ops:bundle-sql": "node scripts/ops-automate.mjs bundle-sql",
+    "ops:gen-secrets": "node scripts/ops-automate.mjs gen-secrets",
     "ops:verify-env": "node scripts/ops-automate.mjs verify-env",
     "ops:deploy-functions": "node scripts/ops-automate.mjs deploy-functions"
   },

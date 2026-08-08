@@ -207,6 +207,7 @@ export const en: Record<TranslationKey, string> = {
   records: 'records',
   online: 'Online',
   offline: 'Offline',
+  offlineLimited: 'Offline — viewing cached data; writes may not sync until you reconnect',
   syncing: 'Syncing...',
   portal: 'My Portal',
   myBills: 'My Bills',

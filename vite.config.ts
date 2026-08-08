@@ -1,10 +1,43 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import checker from 'vite-plugin-checker'
+
+/** Dev-only sinks so /api/errors and /api/vitals work with `npm run dev`. */
+function localObservabilityPlugin(): Plugin {
+  return {
+    name: 'hospital-local-observability',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (req.method === 'POST' && (req.url === '/api/errors' || req.url === '/api/vitals')) {
+          const chunks: Buffer[] = []
+          req.on('data', (c) => chunks.push(Buffer.from(c)))
+          req.on('end', () => {
+            try {
+              const raw = Buffer.concat(chunks).toString('utf8')
+              const body = raw ? JSON.parse(raw) : {}
+              if (req.url === '/api/errors') {
+                console.error('[api/errors]', body.message ?? body)
+              } else {
+                console.debug('[api/vitals]', body.name, body.value, body.rating)
+              }
+            } catch {
+              /* ignore bad payloads */
+            }
+            res.statusCode = 204
+            res.end()
+          })
+          return
+        }
+        next()
+      })
+    },
+  }
+}
 
 export default defineConfig({
   plugins: [
     react(),
+    localObservabilityPlugin(),
     checker({
       typescript: true,
       eslint: {

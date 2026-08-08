@@ -7,26 +7,31 @@ interface ErrorReport {
   userAgent: string
 }
 
-const ERROR_ENDPOINT = import.meta.env.VITE_ERROR_ENDPOINT as string | undefined
+function resolveErrorEndpoint(): string | undefined {
+  const fromEnv = import.meta.env.VITE_ERROR_ENDPOINT as string | undefined
+  if (fromEnv) return fromEnv
+  // Dev default: Vite middleware / SSR server sink
+  if (import.meta.env.DEV) return '/api/errors'
+  return undefined
+}
 
 export async function reportError(report: ErrorReport): Promise<void> {
-  // Always log to console in development
   if (import.meta.env.DEV) {
     console.error('[Error Report]', report)
   }
 
-  // Send to external endpoint if configured (e.g. Sentry, custom API)
-  if (ERROR_ENDPOINT) {
-    try {
-      await fetch(ERROR_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(report),
-        credentials: 'include',
-      })
-    } catch {
-      // Silent fail — don't crash the app trying to report an error
-    }
+  const endpoint = resolveErrorEndpoint()
+  if (!endpoint) return
+
+  try {
+    await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(report),
+      credentials: 'include',
+    })
+  } catch {
+    // Silent fail — don't crash the app trying to report an error
   }
 }
 
