@@ -97,6 +97,10 @@ export const en: Record<TranslationKey, string> = {
   invalidCredentials: 'Invalid credentials',
   demoAuthWarning:
     'Demo build: sign-in is not secure and all data is stored unencrypted in this browser. Do not enter real patient information.',
+  mfaPendingHint:
+    'Password accepted. Complete MFA below to finish sign-in — this is not a failed login.',
+  mfaLocalDevHint:
+    'Local UAT only: set VITE_DISABLE_MFA=true in .env.local and restart Vite to skip MFA for demo staff roles.',
   languageDescription: 'Change the interface language',
   switchLanguage: 'التبديل إلى العربية',
   notificationsDescription: 'Receive appointment and message alerts',

@@ -300,6 +300,19 @@ export default function Login() {
             {t('demoAuthWarning')}
           </p>
         )}
+        {mfaUser && (
+          <p
+            role="status"
+            className="mt-4 mx-4 p-3 rounded-xl bg-primary-50 dark:bg-primary-900/20 text-primary-800 dark:text-primary-200 text-xs text-center"
+          >
+            {t('mfaPendingHint')}
+          </p>
+        )}
+        {demoAllowed && !misconfigured && mfaUser && isMFARequired(mfaUser.role) && (
+          <p className="mt-2 mx-4 text-[11px] text-center text-gray-500 dark:text-gray-400">
+            {t('mfaLocalDevHint')}
+          </p>
+        )}
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">

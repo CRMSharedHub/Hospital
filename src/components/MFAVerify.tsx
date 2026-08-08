@@ -113,6 +113,11 @@ export function MFASetup({ userId, email, role, onVerified, onCancel }: MFASetup
                   ? (lang === 'ar' ? 'مطلوبة لدورك (وضع تجريبي)' : 'Required for your role (demo)')
                   : (lang === 'ar' ? 'اختيارية' : 'Optional')}
             </p>
+            <p className="text-xs text-primary-700 dark:text-primary-300 mt-1">
+              {lang === 'ar'
+                ? 'كلمة المرور صحيحة — هذه الخطوة التالية وليست خطأ تسجيل دخول.'
+                : 'Password OK — this step is next, not a login error.'}
+            </p>
           </div>
         </div>
 
@@ -277,9 +282,16 @@ export function MFAVerify({ userId, onVerified, onCancel }: MFAVerifyProps) {
           <div className="p-2.5 rounded-xl bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
             <KeyRound className="w-6 h-6" />
           </div>
-          <h3 className="font-semibold text-gray-900 dark:text-white">
-            {lang === 'ar' ? 'تحقق المصادقة الثنائية' : 'MFA Verification'}
-          </h3>
+          <div>
+            <h3 className="font-semibold text-gray-900 dark:text-white">
+              {lang === 'ar' ? 'تحقق المصادقة الثنائية' : 'MFA Verification'}
+            </h3>
+            <p className="text-xs text-primary-700 dark:text-primary-300 mt-0.5">
+              {lang === 'ar'
+                ? 'كلمة المرور صحيحة — أدخل الرمز لإكمال الدخول.'
+                : 'Password OK — enter your code to finish sign-in.'}
+            </p>
+          </div>
         </div>
 
         <p className="text-sm text-gray-600 dark:text-gray-400">

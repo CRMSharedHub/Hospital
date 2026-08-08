@@ -12,6 +12,8 @@ In **Supabase Dashboard → SQL Editor**, run in order:
 
 ## 2. Auth MFA
 
+Local demo friction (skip MFA / checker overlay): see `docs/ops/LOCAL_DEMO_UAT.md`. Production: do **not** set `VITE_DISABLE_MFA` or `VITE_ALLOW_DEMO_AUTH`.
+
 Dashboard → **Authentication → Multi-Factor** → enable **TOTP**.
 
 ## 3. Edge Functions

@@ -11,6 +11,9 @@ export default defineConfig({
         useFlatConfig: true,
         lintCommand: 'eslint "src/**/*.{ts,tsx}"',
       },
+      // Overlay steals pointer events and blocks login / manual UAT on `npm run dev` (UX-01).
+      // Terminal diagnostics stay on. Opt in: VITE_CHECKER_OVERLAY=true
+      overlay: process.env.VITE_CHECKER_OVERLAY === 'true',
     }),
   ],
   ssr: {

@@ -95,6 +95,10 @@ export const ar = {
   invalidCredentials: 'بيانات الدخول غير صحيحة',
   demoAuthWarning:
     'إصدار تجريبي: تسجيل الدخول غير آمن وجميع البيانات مخزّنة غير مشفّرة في هذا المتصفح. لا تُدخل بيانات مرضى حقيقية.',
+  mfaPendingHint:
+    'تم قبول كلمة المرور. أكمل المصادقة الثنائية أدناه لإنهاء تسجيل الدخول — هذا ليس فشل دخول.',
+  mfaLocalDevHint:
+    'للاختبار المحلي فقط: عيّن VITE_DISABLE_MFA=true في .env.local ثم أعد تشغيل Vite لتجاوز المصادقة الثنائية لأدوار الموظفين التجريبية.',
   languageDescription: 'تغيير لغة واجهة النظام',
   switchLanguage: 'Switch to English',
   notificationsDescription: 'استقبال تنبيهات المواعيد والرسائل',
