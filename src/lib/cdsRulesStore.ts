@@ -111,6 +111,16 @@ function ddiToSupabaseRow(rule: CdsDrugInteractionRule) {
   }
 }
 
+function assertPersistedRuleId(id: number | undefined, op: 'mutate' | 'deactivate'): void {
+  if (isSupabaseConfigured && (id == null || id < 1)) {
+    throw new Error(
+      op === 'deactivate'
+        ? 'Cannot deactivate seed-fallback rule'
+        : 'Cannot mutate seed-fallback rule',
+    )
+  }
+}
+
 function allergyToSupabaseRow(rule: CdsAllergyRule) {
   return {
     ...(rule.id != null ? { id: rule.id } : {}),
@@ -176,12 +186,13 @@ export async function getActiveCdsRules(): Promise<ActiveCdsRules> {
 }
 
 export async function listCdsDrugInteractions(): Promise<CdsDrugInteractionRule[]> {
+  if (isSupabaseConfigured && supabase) {
+    const { data, error } = await supabase.from('cds_drug_interactions').select('*')
+    if (error) throw error
+    return (data ?? []).map((row) => mapSupabaseDdi(row as Record<string, unknown>))
+  }
+
   try {
-    if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase.from('cds_drug_interactions').select('*')
-      if (error) throw error
-      return (data ?? []).map((row) => mapSupabaseDdi(row as Record<string, unknown>))
-    }
     await ensureDemoSeed()
     return db.cdsDrugInteractions.toArray()
   } catch (err) {
@@ -191,12 +202,13 @@ export async function listCdsDrugInteractions(): Promise<CdsDrugInteractionRule[
 }
 
 export async function listCdsAllergyRules(): Promise<CdsAllergyRule[]> {
+  if (isSupabaseConfigured && supabase) {
+    const { data, error } = await supabase.from('cds_allergy_rules').select('*')
+    if (error) throw error
+    return (data ?? []).map((row) => mapSupabaseAllergy(row as Record<string, unknown>))
+  }
+
   try {
-    if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase.from('cds_allergy_rules').select('*')
-      if (error) throw error
-      return (data ?? []).map((row) => mapSupabaseAllergy(row as Record<string, unknown>))
-    }
     await ensureDemoSeed()
     return db.cdsAllergyRules.toArray()
   } catch (err) {
@@ -210,6 +222,7 @@ export async function upsertCdsDrugInteraction(
 ): Promise<number> {
   try {
     if (isSupabaseConfigured && supabase) {
+      if (rule.id != null) assertPersistedRuleId(rule.id, 'mutate')
       const row = ddiToSupabaseRow(rule)
       const { data, error } = await supabase
         .from('cds_drug_interactions')
@@ -239,6 +252,7 @@ export async function upsertCdsDrugInteraction(
 export async function upsertCdsAllergyRule(rule: CdsAllergyRule): Promise<number> {
   try {
     if (isSupabaseConfigured && supabase) {
+      if (rule.id != null) assertPersistedRuleId(rule.id, 'mutate')
       const row = allergyToSupabaseRow(rule)
       const { data, error } = await supabase
         .from('cds_allergy_rules')
@@ -271,6 +285,7 @@ export async function setCdsDrugInteractionActive(
 ): Promise<void> {
   try {
     if (isSupabaseConfigured && supabase) {
+      assertPersistedRuleId(id, 'deactivate')
       const { error } = await supabase
         .from('cds_drug_interactions')
         .update({ active })
@@ -294,6 +309,7 @@ export async function setCdsAllergyRuleActive(
 ): Promise<void> {
   try {
     if (isSupabaseConfigured && supabase) {
+      assertPersistedRuleId(id, 'deactivate')
       const { error } = await supabase
         .from('cds_allergy_rules')
         .update({ active })

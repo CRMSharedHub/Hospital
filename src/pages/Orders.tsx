@@ -222,7 +222,6 @@ export default function Orders() {
                     className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2"
                     placeholder={t('cdsOverrideReasonHint')}
                   />
-                  <span className="text-xs text-gray-500">{t('cdsOverrideReasonHint')}</span>
                 </label>
               )}
               <button

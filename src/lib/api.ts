@@ -259,8 +259,6 @@ export const usePlaceClinicalOrder = () => {
     },
     onError: (e) => {
       if (isCdsAckRequiredError(e)) return
-      const msg = e instanceof Error ? e.message : ''
-      if (msg.startsWith('Possible allergy conflict')) return
       onErrorHandler(e, 'Failed to place order')
     },
   })
