@@ -9,11 +9,14 @@ import {
 } from '../lib/api'
 import { countOpenOrders } from '../lib/cpoe'
 import { clinicalOrderSchema } from '../lib/validation'
+import { CdsAckRequiredError, requiresOverrideReason } from '../lib/cdsEngine'
+import type { CdsAlert } from '../lib/cdsTypes'
 import { useI18n, type TranslationKey } from '../i18n'
 import { usePermission } from '../auth/usePermission'
 import { useAuthStore } from '../store/authStore'
 import type { ClinicalOrder, ClinicalOrderType, ClinicalOrderPriority } from '../types'
 import StatCard from '../components/StatCard'
+import CdsAlertCards from '../components/CdsAlertCards'
 
 const statusStyles: Record<string, string> = {
   draft: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200',
@@ -29,8 +32,17 @@ const priorityStyles: Record<string, string> = {
   stat: 'text-red-600 dark:text-red-400 font-semibold',
 }
 
+function isCdsAckRequiredError(error: unknown): error is CdsAckRequiredError {
+  return (
+    error instanceof CdsAckRequiredError ||
+    (error instanceof Error &&
+      error.name === 'CdsAckRequiredError' &&
+      Array.isArray((error as CdsAckRequiredError).alerts))
+  )
+}
+
 export default function Orders() {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const { can } = usePermission()
   const canEdit = can('orders:edit')
   const userName = useAuthStore((s) => s.user?.name)
@@ -51,15 +63,19 @@ export default function Orders() {
   const [quantity, setQuantity] = useState('30')
   const [notes, setNotes] = useState('')
   const [formError, setFormError] = useState('')
-  const [pendingAllergy, setPendingAllergy] = useState<string | null>(null)
+  const [pendingAlerts, setPendingAlerts] = useState<CdsAlert[] | null>(null)
+  const [overrideReason, setOverrideReason] = useState('')
 
   const filtered = useMemo(
     () => (typeFilter === 'all' ? orders : orders.filter((o) => o.orderType === typeFilter)),
     [orders, typeFilter],
   )
   const openCount = countOpenOrders(orders)
+  const needsOverrideReason = Boolean(pendingAlerts && requiresOverrideReason(pendingAlerts))
+  const canAcknowledge =
+    !needsOverrideReason || overrideReason.trim().length >= 5
 
-  const buildPayload = (acknowledgeAllergy?: boolean, acknowledgeDrugInteraction?: boolean) => {
+  const buildPayload = (acknowledgeCds?: boolean) => {
     const patient = patients.find((p) => p.id === Number(patientId))
     if (!patient) throw new Error('Patient required')
     const parsed = clinicalOrderSchema.safeParse({
@@ -88,35 +104,28 @@ export default function Orders() {
       quantity: parsed.data.quantity,
       orderedBy: userName,
       notes: parsed.data.notes,
-      acknowledgeAllergy,
-      acknowledgeDrugInteraction,
+      acknowledgeCds,
+      cdsOverrideReason: overrideReason.trim() || undefined,
     }
   }
 
   const submit = async (acknowledgeCds?: boolean) => {
     setFormError('')
     try {
-      const payload = buildPayload(acknowledgeCds, acknowledgeCds)
+      const payload = buildPayload(acknowledgeCds)
       await placeOrder.mutateAsync(payload)
-      setPendingAllergy(null)
+      setPendingAlerts(null)
+      setOverrideReason('')
       setDescription('')
       setCode('')
       setNotes('')
       setMedicineId('')
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Failed'
-      if (
-        msg.startsWith('Possible allergy conflict') ||
-        msg.includes('bleeding risk') ||
-        msg.includes('Serotonin') ||
-        msg.includes('Hyperkalemia') ||
-        msg.includes('myopathy') ||
-        msg.includes('metformin')
-      ) {
-        setPendingAllergy(msg)
-      } else {
-        setFormError(msg)
+      if (isCdsAckRequiredError(e)) {
+        setPendingAlerts(e.alerts)
+        return
       }
+      setFormError(e instanceof Error ? e.message : 'Failed')
     }
   }
 
@@ -200,11 +209,29 @@ export default function Orders() {
             </label>
           </div>
           {formError && <p className="text-sm text-red-600">{formError}</p>}
-          {pendingAllergy && (
-            <div className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-900/20 p-3 text-sm text-amber-900 dark:text-amber-200 space-y-2">
-              <p className="flex items-start gap-2"><AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />{pendingAllergy}</p>
-              <button type="button" onClick={() => void submit(true)} className="px-3 py-1.5 rounded-lg bg-amber-600 text-white text-sm">
-                {t('acknowledgeCds')}
+          {pendingAlerts && (
+            <div className="space-y-3 rounded-lg border border-amber-300 dark:border-amber-700 p-3">
+              <CdsAlertCards alerts={pendingAlerts} locale={lang} />
+              {needsOverrideReason && (
+                <label className="block text-sm space-y-1">
+                  <span className="text-gray-700 dark:text-gray-200 font-medium">{t('cdsOverrideReason')}</span>
+                  <textarea
+                    value={overrideReason}
+                    onChange={(e) => setOverrideReason(e.target.value)}
+                    rows={3}
+                    className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2"
+                    placeholder={t('cdsOverrideReasonHint')}
+                  />
+                  <span className="text-xs text-gray-500">{t('cdsOverrideReasonHint')}</span>
+                </label>
+              )}
+              <button
+                type="button"
+                disabled={!canAcknowledge || placeOrder.isPending}
+                onClick={() => void submit(true)}
+                className="px-3 py-1.5 rounded-lg bg-amber-600 text-white text-sm disabled:opacity-50"
+              >
+                {t('cdsAcknowledgeAndPlace')}
               </button>
             </div>
           )}
@@ -250,6 +277,11 @@ export default function Orders() {
               {o.allergyAlert && (
                 <p className="text-xs text-amber-700 dark:text-amber-300 flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3" /> {o.allergyAlert}
+                </p>
+              )}
+              {o.cdsOverrideReason && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {t('cdsOverrideReason')}: {o.cdsOverrideReason}
                 </p>
               )}
             </div>
