@@ -28,19 +28,40 @@ function stripSeedId<T extends { id?: number }>(rule: T): Omit<T, 'id'> {
   return rest
 }
 
-async function ensureDemoSeed(): Promise<void> {
+let demoSeedPromise: Promise<void> | null = null
+
+async function runDemoSeed(): Promise<void> {
   const [ddiCount, allergyCount] = await Promise.all([
     db.cdsDrugInteractions.count(),
     db.cdsAllergyRules.count(),
   ])
-  if (ddiCount > 0 || allergyCount > 0) return
+  if (ddiCount > 0 && allergyCount > 0) return
 
-  await db.cdsDrugInteractions.bulkAdd(
-    SEED_DDI_RULES.map((r) => stripSeedId(r) as CdsDrugInteractionRule),
-  )
-  await db.cdsAllergyRules.bulkAdd(
-    SEED_ALLERGY_RULES.map((r) => stripSeedId(r) as CdsAllergyRule),
-  )
+  await db.transaction('rw', db.cdsDrugInteractions, db.cdsAllergyRules, async () => {
+    const [ddiNow, allergyNow] = await Promise.all([
+      db.cdsDrugInteractions.count(),
+      db.cdsAllergyRules.count(),
+    ])
+    if (ddiNow === 0) {
+      await db.cdsDrugInteractions.bulkAdd(
+        SEED_DDI_RULES.map((r) => stripSeedId(r) as CdsDrugInteractionRule),
+      )
+    }
+    if (allergyNow === 0) {
+      await db.cdsAllergyRules.bulkAdd(
+        SEED_ALLERGY_RULES.map((r) => stripSeedId(r) as CdsAllergyRule),
+      )
+    }
+  })
+}
+
+async function ensureDemoSeed(): Promise<void> {
+  if (demoSeedPromise) return demoSeedPromise
+
+  demoSeedPromise = runDemoSeed().finally(() => {
+    demoSeedPromise = null
+  })
+  return demoSeedPromise
 }
 
 function mapSupabaseDdi(row: Record<string, unknown>): CdsDrugInteractionRule {
