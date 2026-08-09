@@ -10,6 +10,8 @@ supabase/phase-b3-cpoe.sql
 
 Creates `clinical_orders` (lab / pharmacy / imaging / nursing / other) with priority, allergy alert text, and optional links to `lab_tests` / `pharmacy_orders`.
 
+Next: [Phase B3b — CDS rules](./PHASE_B3B_CDS.md) (`phase-b3b-cds-rules.sql`).
+
 Redeploy FHIR:
 
 ```bash

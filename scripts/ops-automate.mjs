@@ -29,6 +29,7 @@ export const SQL_ORDER = [
   'supabase/phase-b1-adt.sql',
   'supabase/phase-b2-clinical.sql',
   'supabase/phase-b3-cpoe.sql',
+  'supabase/phase-b3b-cds-rules.sql',
   'supabase/phase-b4-emar.sql',
   'supabase/phase-d-enterprise.sql',
   'supabase/phase-d2-facility-rls.sql',
