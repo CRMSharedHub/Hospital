@@ -263,7 +263,7 @@ export const SEED_ALLERGY_RULES: CdsAllergyRule[] = [
     severity: 'major',
     category: 'allergy_cross_reactivity',
     messageEn: 'Cephalosporin allergy — avoid cephalosporin class agents',
-    messageAr: 'حساسية السفلخسين — تجنب عوامل فئة السفلخسين',
+    messageAr: 'حساسية السيفالوسبورين — تجنب عوامل فئة السيفالوسبورين',
     actionEn: 'Use alternative antibiotic; override reason required if ordering',
     actionAr: 'استخدم مضادًا حيويًا بديلًا؛ سبب التجاوز مطلوب عند الطلب',
     active: true,
