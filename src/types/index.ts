@@ -1,3 +1,5 @@
+import type { CdsAlert } from '../lib/cdsTypes'
+
 export interface User {
   id: string
   name: string
@@ -272,6 +274,10 @@ export interface ClinicalOrder {
   allergyAlert?: string
   linkedLabTestId?: number
   linkedPharmacyOrderId?: number
+  cdsAlerts?: CdsAlert[]
+  cdsOverrideReason?: string
+  cdsAcknowledgedBy?: string
+  cdsAcknowledgedAt?: string
 }
 
 // ── eMAR (Phase B4) ───────────────────────────────────────

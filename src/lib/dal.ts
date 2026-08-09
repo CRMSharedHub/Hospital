@@ -30,10 +30,30 @@ import type {
 import { invoiceStatusAfterPayment } from './billingMath'
 import { canAdmitPatient, canAdmitToBed } from './adt'
 import { hasAnyVitalMeasurement, canResolveProblem } from './clinicalChart'
-import { canPlaceOrder, checkDrugAllergyAlert } from './cpoe'
-import { checkDrugDrugInteractions, formatDrugInteractionAlert } from './cds'
+import { canPlaceOrder } from './cpoe'
+import {
+  assertCdsPlacementAllowed,
+  evaluateCds,
+  formatCdsSummary,
+} from './cdsEngine'
+import { getActiveCdsRules } from './cdsRulesStore'
+import type { CdsAlert } from './cdsTypes'
 import { canAdminister } from './emar'
 import { filterByFacility, normalizeFacilityCode } from './facility'
+
+function parseCdsAlertsJson(value: unknown): CdsAlert[] | undefined {
+  if (value == null) return undefined
+  if (Array.isArray(value)) return value as CdsAlert[]
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value) as unknown
+      return Array.isArray(parsed) ? (parsed as CdsAlert[]) : undefined
+    } catch {
+      return undefined
+    }
+  }
+  return undefined
+}
 
 // ── Field mapping helpers (snake_case ↔ camelCase) ────────
 function mapPatient(row: Record<string, unknown>): Patient {
@@ -256,6 +276,10 @@ function mapClinicalOrder(row: Record<string, unknown>): ClinicalOrder {
     allergyAlert: (row.allergy_alert as string) || undefined,
     linkedLabTestId: (row.linked_lab_test_id as number) || undefined,
     linkedPharmacyOrderId: (row.linked_pharmacy_order_id as number) || undefined,
+    cdsAlerts: parseCdsAlertsJson(row.cds_alerts_json),
+    cdsOverrideReason: (row.cds_override_reason as string) || undefined,
+    cdsAcknowledgedBy: (row.cds_acknowledged_by as string) || undefined,
+    cdsAcknowledgedAt: (row.cds_acknowledged_at as string) || undefined,
   }
 }
 
@@ -1293,39 +1317,47 @@ export const dal = {
     quantity?: number
     orderedBy?: string
     notes?: string
+    acknowledgeCds?: boolean
+    cdsOverrideReason?: string
     acknowledgeAllergy?: boolean
     acknowledgeDrugInteraction?: boolean
-  }): Promise<{ id: number; allergyAlert?: string; drugInteractionAlert?: string }> {
+  }): Promise<{
+    id: number
+    allergyAlert?: string
+    drugInteractionAlert?: string
+    cdsAlerts?: CdsAlert[]
+  }> {
     const err = canPlaceOrder(input)
     if (err) throw new Error(err)
 
+    let cdsAlerts: CdsAlert[] | undefined
     let allergyAlert: string | undefined
-    let drugInteractionAlert: string | undefined
     let medicineName = input.description
+    const acknowledgeCds =
+      input.acknowledgeCds ??
+      Boolean(input.acknowledgeAllergy || input.acknowledgeDrugInteraction)
     if (input.orderType === 'pharmacy' && input.medicineId) {
       const medicines = await this.getMedicines()
       const med = medicines.find((m) => m.id === input.medicineId)
       if (!med) throw new Error('Medicine not found')
       medicineName = med.name
       const patient = (await this.getPatients()).find((p) => p.id === input.patientId)
-      const alert = checkDrugAllergyAlert(med.name, patient?.allergies)
-      if (alert) {
-        allergyAlert = alert
-        if (!input.acknowledgeAllergy) {
-          throw new Error(alert)
-        }
-      }
       const activeMeds = await this.getMedications(input.patientId)
-      const interactions = checkDrugDrugInteractions(
-        med.name,
-        activeMeds.map((m) => m.name),
-      )
-      const interactionMsg = formatDrugInteractionAlert(interactions)
-      if (interactionMsg) {
-        drugInteractionAlert = interactionMsg
-        if (!input.acknowledgeDrugInteraction) {
-          throw new Error(interactionMsg)
-        }
+      const { ddi, allergy } = await getActiveCdsRules()
+      const alerts = evaluateCds({
+        medicineName: med.name,
+        allergies: patient?.allergies,
+        activeMedications: activeMeds.map((m) => m.name),
+        ddiRules: ddi,
+        allergyRules: allergy,
+      })
+      assertCdsPlacementAllowed(alerts, {
+        acknowledgeCds,
+        cdsOverrideReason: input.cdsOverrideReason,
+      })
+      if (alerts.length) {
+        cdsAlerts = alerts
+        allergyAlert = formatCdsSummary(alerts, 'en') ?? undefined
       }
     }
 
@@ -1356,6 +1388,7 @@ export const dal = {
       })
     }
 
+    const acknowledged = Boolean(cdsAlerts?.length) && Boolean(acknowledgeCds)
     const row: Omit<ClinicalOrder, 'id'> = {
       patientId: input.patientId,
       patientName: input.patientName,
@@ -1369,9 +1402,13 @@ export const dal = {
       orderedBy: input.orderedBy,
       orderedAt,
       notes: input.notes,
-      allergyAlert: [allergyAlert, drugInteractionAlert].filter(Boolean).join(' | ') || undefined,
+      allergyAlert,
       linkedLabTestId,
       linkedPharmacyOrderId,
+      cdsAlerts,
+      cdsOverrideReason: input.cdsOverrideReason?.trim() || undefined,
+      cdsAcknowledgedBy: acknowledged ? input.orderedBy : undefined,
+      cdsAcknowledgedAt: acknowledged ? orderedAt : undefined,
     }
 
     if (isSupabaseConfigured && supabase) {
@@ -1393,6 +1430,10 @@ export const dal = {
           allergy_alert: row.allergyAlert ?? null,
           linked_lab_test_id: row.linkedLabTestId ?? null,
           linked_pharmacy_order_id: row.linkedPharmacyOrderId ?? null,
+          cds_alerts_json: row.cdsAlerts ?? null,
+          cds_override_reason: row.cdsOverrideReason ?? null,
+          cds_acknowledged_by: row.cdsAcknowledgedBy ?? null,
+          cds_acknowledged_at: row.cdsAcknowledgedAt ?? null,
         })
         .select('id')
         .single()
@@ -1409,7 +1450,7 @@ export const dal = {
           pharmacyOrderId: linkedPharmacyOrderId,
         })
       }
-      return { id: data.id, allergyAlert: row.allergyAlert, drugInteractionAlert }
+      return { id: data.id, allergyAlert: row.allergyAlert, cdsAlerts: row.cdsAlerts }
     }
 
     const id = await db.clinicalOrders.add(row as ClinicalOrder)
@@ -1425,7 +1466,7 @@ export const dal = {
         pharmacyOrderId: linkedPharmacyOrderId,
       })
     }
-    return { id, allergyAlert: row.allergyAlert, drugInteractionAlert }
+    return { id, allergyAlert: row.allergyAlert, cdsAlerts: row.cdsAlerts }
   },
 
   async updateClinicalOrderStatus(id: number, status: ClinicalOrder['status']): Promise<void> {

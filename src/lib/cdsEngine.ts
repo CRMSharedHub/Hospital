@@ -153,3 +153,14 @@ export class CdsAckRequiredError extends Error {
     this.alerts = alerts
   }
 }
+
+export function assertCdsPlacementAllowed(
+  alerts: CdsAlert[],
+  opts: { acknowledgeCds?: boolean; cdsOverrideReason?: string },
+): void {
+  if (!alerts.length) return
+  if (!opts.acknowledgeCds) throw new CdsAckRequiredError(alerts)
+  if (requiresOverrideReason(alerts) && (opts.cdsOverrideReason?.trim().length ?? 0) < 5) {
+    throw new Error('CDS override reason required (min 5 characters)')
+  }
+}

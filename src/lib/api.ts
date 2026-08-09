@@ -16,10 +16,18 @@ import type {
   Payment,
 } from '../types'
 import { toast } from 'sonner'
+import { CdsAckRequiredError } from './cdsEngine'
 
 function onErrorHandler(error: unknown, fallbackMsg: string) {
   const msg = error instanceof Error ? error.message : fallbackMsg
   toast.error(msg)
+}
+
+function isCdsAckRequiredError(error: unknown): error is CdsAckRequiredError {
+  return (
+    error instanceof CdsAckRequiredError ||
+    (error instanceof Error && error.name === 'CdsAckRequiredError')
+  )
 }
 
 // Patients
@@ -249,6 +257,7 @@ export const usePlaceClinicalOrder = () => {
       }
     },
     onError: (e) => {
+      if (isCdsAckRequiredError(e)) return
       const msg = e instanceof Error ? e.message : ''
       if (msg.startsWith('Possible allergy conflict')) return
       onErrorHandler(e, 'Failed to place order')

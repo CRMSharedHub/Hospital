@@ -10,6 +10,7 @@ export {
   requiresAcknowledge,
   formatCdsSummary,
   CdsAckRequiredError,
+  assertCdsPlacementAllowed,
 } from './cdsEngine'
 export { SEED_DDI_RULES, SEED_ALLERGY_RULES } from './cdsSeed'
 
