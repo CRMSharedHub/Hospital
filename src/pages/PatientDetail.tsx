@@ -26,6 +26,7 @@ import {
   useMarEntries,
 } from '../lib/api'
 import { useI18n, type TranslationKey } from '../i18n'
+import CdsAlertCards from '../components/CdsAlertCards'
 import { useState } from 'react'
 import { visitSchema, medicationSchema, noteSchema, vitalSignSchema, problemSchema } from '../lib/validation'
 import { formatBp, vitalWarnings } from '../lib/clinicalChart'
@@ -67,7 +68,7 @@ function numOrEmpty(v: string): number | undefined {
 export default function PatientDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const { can } = usePermission()
   const canEdit = can('patients:edit')
   const userName = useAuthStore((s) => s.user?.name)
@@ -440,7 +441,17 @@ export default function PatientDetail() {
                     <span className="text-xs text-gray-500">{t(o.status as TranslationKey)}</span>
                   </div>
                   <p className="text-sm text-gray-500 mt-1">{new Date(o.orderedAt).toLocaleString()}</p>
-                  {o.allergyAlert && <p className="text-xs text-amber-700 mt-1">{o.allergyAlert}</p>}
+                  {o.allergyAlert && <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">{o.allergyAlert}</p>}
+                  {o.cdsOverrideReason && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {t('cdsOverrideReason')}: {o.cdsOverrideReason}
+                    </p>
+                  )}
+                  {o.cdsAlerts?.length ? (
+                    <div className="mt-2 scale-[0.95] origin-top">
+                      <CdsAlertCards alerts={o.cdsAlerts} locale={lang} />
+                    </div>
+                  ) : null}
                 </div>
               )) : <p className="text-gray-400 text-center py-8">{t('noOrders')}</p>}
             </div>

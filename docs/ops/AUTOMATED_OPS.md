@@ -38,7 +38,7 @@ Includes `phase-d2-facility-rls.sql` after `phase-d-enterprise.sql`.
 | KMS prefer `kms-unwrap` | Setting `ENCRYPTION_KEY` |
 | DLP + audit on export | — |
 | Facility RLS + memberships UI | Assigning live Auth user UUIDs |
-| CDS drug–drug + allergy | Clinical expansion of pairs |
+| CDS drug–drug + allergy + admin rules | DB-backed rules, override reasons, `/cds-rules` UI |
 | Compliance templates + auto-detect | Signing BAA, drills, HR training |
 | Live checklist doc | MFA / PITR toggles in Dashboard |
 

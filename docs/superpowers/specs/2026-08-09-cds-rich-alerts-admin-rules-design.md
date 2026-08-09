@@ -1,7 +1,7 @@
 # CDS Rich Alerts + Admin Rules Design
 
 **Date:** 2026-08-09  
-**Status:** Approved in brainstorming (awaiting user review of this written spec)
+**Status:** Implemented
 
 ## Objective
 
