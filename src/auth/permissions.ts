@@ -35,6 +35,8 @@ export type Permission =
   | 'facilities:edit'
   | 'compliance:view'
   | 'compliance:edit'
+  | 'cdsRules:view'
+  | 'cdsRules:edit'
 
 export type Role = User['role']
 
@@ -57,6 +59,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'auditLog:view',
     'facilities:view', 'facilities:edit',
     'compliance:view', 'compliance:edit',
+    'cdsRules:view', 'cdsRules:edit',
     'settings:view', 'settings:edit',
     'users:manage',
   ],
@@ -132,6 +135,7 @@ const ROUTE_PERMISSIONS: Record<string, Permission> = {
   '/emar': 'emar:view',
   '/reports': 'reports:view',
   '/audit-log': 'auditLog:view',
+  '/cds-rules': 'cdsRules:view',
   '/settings': 'settings:view',
 }
 

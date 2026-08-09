@@ -26,6 +26,7 @@ const Emar = lazy(() => import('./pages/Emar'))
 const Reports = lazy(() => import('./pages/Reports'))
 const Settings = lazy(() => import('./pages/Settings'))
 const AuditLog = lazy(() => import('./pages/AuditLog'))
+const CdsRules = lazy(() => import('./pages/CdsRules'))
 const Login = lazy(() => import('./pages/Login'))
 
 function PageLoader() {
@@ -67,6 +68,7 @@ function App() {
               <Route path="emar" element={<Emar />} />
               <Route path="reports" element={<Reports />} />
               <Route path="audit-log" element={<AuditLog />} />
+              <Route path="cds-rules" element={<CdsRules />} />
               <Route path="settings" element={<Settings />} />
             </Route>
           </Route>

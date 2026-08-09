@@ -36,8 +36,16 @@ import {
   evaluateCds,
   formatCdsSummary,
 } from './cdsEngine'
-import { getActiveCdsRules } from './cdsRulesStore'
-import type { CdsAlert } from './cdsTypes'
+import {
+  getActiveCdsRules,
+  listCdsAllergyRules,
+  listCdsDrugInteractions,
+  setCdsAllergyRuleActive,
+  setCdsDrugInteractionActive,
+  upsertCdsAllergyRule,
+  upsertCdsDrugInteraction,
+} from './cdsRulesStore'
+import type { CdsAlert, CdsAllergyRule, CdsDrugInteractionRule } from './cdsTypes'
 import { canAdminister } from './emar'
 import { filterByFacility, normalizeFacilityCode } from './facility'
 
@@ -1963,4 +1971,13 @@ export const dal = {
     }
     await db.complianceAttestations.update(id, { status, notes, updatedAt })
   },
+
+  // ── CDS rules ────────────────────────────────────────────
+  listCdsDrugInteractions: () => listCdsDrugInteractions(),
+  listCdsAllergyRules: () => listCdsAllergyRules(),
+  upsertCdsDrugInteraction: (rule: CdsDrugInteractionRule) => upsertCdsDrugInteraction(rule),
+  upsertCdsAllergyRule: (rule: CdsAllergyRule) => upsertCdsAllergyRule(rule),
+  setCdsDrugInteractionActive: (id: number, active: boolean) =>
+    setCdsDrugInteractionActive(id, active),
+  setCdsAllergyRuleActive: (id: number, active: boolean) => setCdsAllergyRuleActive(id, active),
 }

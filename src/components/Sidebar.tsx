@@ -22,6 +22,7 @@ import {
   MessageSquare,
   Building2,
   ShieldCheck,
+  ShieldAlert,
   ChevronDown,
 } from 'lucide-react'
 import { useI18n, type TranslationKey } from '../i18n'
@@ -81,6 +82,7 @@ const NAV_GROUPS: {
     items: [
       { to: '/reports', icon: BarChart3, key: 'reports', permission: 'reports:view' },
       { to: '/audit-log', icon: ScrollText, key: 'auditLog', permission: 'auditLog:view' },
+      { to: '/cds-rules', icon: ShieldAlert, key: 'cdsRules', permission: 'cdsRules:view' },
       { to: '/settings', icon: Settings, key: 'settings', permission: 'settings:view' },
     ],
   },

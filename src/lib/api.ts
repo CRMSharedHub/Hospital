@@ -17,6 +17,7 @@ import type {
 } from '../types'
 import { toast } from 'sonner'
 import { CdsAckRequiredError } from './cdsEngine'
+import { invalidateCdsRulesCache } from './cdsRulesStore'
 
 function onErrorHandler(error: unknown, fallbackMsg: string) {
   const msg = error instanceof Error ? error.message : fallbackMsg
@@ -870,5 +871,75 @@ export const useUpdateCompliance = () => {
       toast.success('Compliance updated')
     },
     onError: (e) => onErrorHandler(e, 'Failed to update compliance'),
+  })
+}
+
+// CDS rules (admin)
+export const useCdsDrugInteractions = () => {
+  return useQuery({
+    queryKey: ['cdsDrugInteractions'],
+    queryFn: () => dal.listCdsDrugInteractions(),
+  })
+}
+
+export const useCdsAllergyRules = () => {
+  return useQuery({
+    queryKey: ['cdsAllergyRules'],
+    queryFn: () => dal.listCdsAllergyRules(),
+  })
+}
+
+export const useUpsertCdsDrugInteraction = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (rule: import('./cdsTypes').CdsDrugInteractionRule) =>
+      dal.upsertCdsDrugInteraction(rule),
+    onSuccess: async () => {
+      invalidateCdsRulesCache()
+      queryClient.invalidateQueries({ queryKey: ['cdsDrugInteractions'] })
+      toast.success('DDI rule saved')
+    },
+    onError: (e) => onErrorHandler(e, 'Failed to save DDI rule'),
+  })
+}
+
+export const useUpsertCdsAllergyRule = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (rule: import('./cdsTypes').CdsAllergyRule) => dal.upsertCdsAllergyRule(rule),
+    onSuccess: async () => {
+      invalidateCdsRulesCache()
+      queryClient.invalidateQueries({ queryKey: ['cdsAllergyRules'] })
+      toast.success('Allergy rule saved')
+    },
+    onError: (e) => onErrorHandler(e, 'Failed to save allergy rule'),
+  })
+}
+
+export const useSetCdsDrugInteractionActive = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, active }: { id: number; active: boolean }) =>
+      dal.setCdsDrugInteractionActive(id, active),
+    onSuccess: async () => {
+      invalidateCdsRulesCache()
+      queryClient.invalidateQueries({ queryKey: ['cdsDrugInteractions'] })
+      toast.success('DDI rule updated')
+    },
+    onError: (e) => onErrorHandler(e, 'Failed to update DDI rule'),
+  })
+}
+
+export const useSetCdsAllergyRuleActive = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, active }: { id: number; active: boolean }) =>
+      dal.setCdsAllergyRuleActive(id, active),
+    onSuccess: async () => {
+      invalidateCdsRulesCache()
+      queryClient.invalidateQueries({ queryKey: ['cdsAllergyRules'] })
+      toast.success('Allergy rule updated')
+    },
+    onError: (e) => onErrorHandler(e, 'Failed to update allergy rule'),
   })
 }
