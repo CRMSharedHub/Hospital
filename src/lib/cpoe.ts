@@ -1,31 +1,21 @@
 import type { ClinicalOrder, ClinicalOrderType, ClinicalOrderPriority } from '../types'
+import { evaluateCds } from './cdsEngine'
+import { SEED_DDI_RULES, SEED_ALLERGY_RULES } from './cdsSeed'
 
-/** Simple drug–allergy heuristic for demo CPOE alerts */
-const ALLERGY_DRUG_HINTS: Record<string, string[]> = {
-  penicillin: ['amoxicillin', 'ampicillin', 'penicillin', 'augmentin'],
-  sulfa: ['sulfamethoxazole', 'sulfadiazine', 'bactrim', 'co-trimoxazole'],
-  aspirin: ['aspirin', 'acetylsalicylic'],
-}
-
+/** @deprecated Use evaluateCds from cdsEngine */
 export function checkDrugAllergyAlert(
   medicineName: string,
   allergies: string[] | undefined,
 ): string | null {
-  if (!allergies?.length || !medicineName.trim()) return null
-  const med = medicineName.toLowerCase()
-  for (const allergy of allergies) {
-    const a = allergy.toLowerCase()
-    // Direct name overlap
-    if (med.includes(a) || a.includes(med.split(/\s+/)[0] ?? '')) {
-      return `Possible allergy conflict: patient allergy "${allergy}" vs ${medicineName}`
-    }
-    for (const [key, drugs] of Object.entries(ALLERGY_DRUG_HINTS)) {
-      if (a.includes(key) && drugs.some((d) => med.includes(d))) {
-        return `Possible allergy conflict: patient allergy "${allergy}" vs ${medicineName}`
-      }
-    }
-  }
-  return null
+  const alerts = evaluateCds({
+    medicineName,
+    activeMedications: [],
+    allergies: allergies ?? [],
+    ddiRules: SEED_DDI_RULES,
+    allergyRules: SEED_ALLERGY_RULES,
+  })
+  const allergy = alerts.find((a) => a.kind === 'allergy')
+  return allergy?.messageEn ?? null
 }
 
 export function canPlaceOrder(input: {

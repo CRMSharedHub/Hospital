@@ -1,15 +1,30 @@
 import { describe, expect, it } from 'vitest'
-import { checkDrugAllergyAlert, canPlaceOrder, countOpenOrders } from './cpoe'
+import { evaluateCds } from './cdsEngine'
+import { SEED_DDI_RULES, SEED_ALLERGY_RULES } from './cdsSeed'
+import { canPlaceOrder, countOpenOrders } from './cpoe'
 import type { ClinicalOrder } from '../types'
+
+const rules = { ddiRules: SEED_DDI_RULES, allergyRules: SEED_ALLERGY_RULES }
 
 describe('cpoe', () => {
   it('detects penicillin class vs amoxicillin', () => {
-    const alert = checkDrugAllergyAlert('Amoxicillin 500mg', ['Penicillin'])
-    expect(alert).toContain('allergy conflict')
+    const alerts = evaluateCds({
+      medicineName: 'Amoxicillin 500mg',
+      activeMedications: [],
+      allergies: ['Penicillin'],
+      ...rules,
+    })
+    expect(alerts.some((a) => a.kind === 'allergy' && a.severity === 'major')).toBe(true)
   })
 
   it('allows unrelated medicine', () => {
-    expect(checkDrugAllergyAlert('Metformin 500mg', ['Penicillin'])).toBeNull()
+    const alerts = evaluateCds({
+      medicineName: 'Metformin 500mg',
+      activeMedications: [],
+      allergies: ['Penicillin'],
+      ...rules,
+    })
+    expect(alerts.filter((a) => a.kind === 'allergy')).toEqual([])
   })
 
   it('validates place order input', () => {
