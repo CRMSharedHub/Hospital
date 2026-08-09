@@ -343,7 +343,7 @@ export default function CdsRules() {
                   />
                 </label>
                 <label className="block space-y-1 sm:col-span-2">
-                  <span className="text-gray-500">EN message</span>
+                  <span className="text-gray-500">{t('cdsMessageEn')}</span>
                   <input
                     value={editingDdi.messageEn}
                     onChange={(e) => setEditingDdi({ ...editingDdi, messageEn: e.target.value })}
@@ -351,7 +351,7 @@ export default function CdsRules() {
                   />
                 </label>
                 <label className="block space-y-1 sm:col-span-2">
-                  <span className="text-gray-500">AR message</span>
+                  <span className="text-gray-500">{t('cdsMessageAr')}</span>
                   <input
                     value={editingDdi.messageAr}
                     onChange={(e) => setEditingDdi({ ...editingDdi, messageAr: e.target.value })}
@@ -359,7 +359,7 @@ export default function CdsRules() {
                   />
                 </label>
                 <label className="block space-y-1 sm:col-span-2">
-                  <span className="text-gray-500">EN action</span>
+                  <span className="text-gray-500">{t('cdsActionEn')}</span>
                   <input
                     value={editingDdi.actionEn}
                     onChange={(e) => setEditingDdi({ ...editingDdi, actionEn: e.target.value })}
@@ -367,7 +367,7 @@ export default function CdsRules() {
                   />
                 </label>
                 <label className="block space-y-1 sm:col-span-2">
-                  <span className="text-gray-500">AR action</span>
+                  <span className="text-gray-500">{t('cdsActionAr')}</span>
                   <input
                     value={editingDdi.actionAr}
                     onChange={(e) => setEditingDdi({ ...editingDdi, actionAr: e.target.value })}
@@ -425,7 +425,7 @@ export default function CdsRules() {
                   />
                 </label>
                 <label className="block space-y-1 sm:col-span-2">
-                  <span className="text-gray-500">EN message</span>
+                  <span className="text-gray-500">{t('cdsMessageEn')}</span>
                   <input
                     value={editingAllergy.messageEn}
                     onChange={(e) =>
@@ -435,7 +435,7 @@ export default function CdsRules() {
                   />
                 </label>
                 <label className="block space-y-1 sm:col-span-2">
-                  <span className="text-gray-500">AR message</span>
+                  <span className="text-gray-500">{t('cdsMessageAr')}</span>
                   <input
                     value={editingAllergy.messageAr}
                     onChange={(e) =>
@@ -445,7 +445,7 @@ export default function CdsRules() {
                   />
                 </label>
                 <label className="block space-y-1 sm:col-span-2">
-                  <span className="text-gray-500">EN action</span>
+                  <span className="text-gray-500">{t('cdsActionEn')}</span>
                   <input
                     value={editingAllergy.actionEn}
                     onChange={(e) =>
@@ -455,7 +455,7 @@ export default function CdsRules() {
                   />
                 </label>
                 <label className="block space-y-1 sm:col-span-2">
-                  <span className="text-gray-500">AR action</span>
+                  <span className="text-gray-500">{t('cdsActionAr')}</span>
                   <input
                     value={editingAllergy.actionAr}
                     onChange={(e) =>
