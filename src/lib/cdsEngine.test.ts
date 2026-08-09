@@ -60,4 +60,31 @@ describe('evaluateCds', () => {
     const ar = formatCdsSummary(alerts, 'ar')!
     expect(en).not.toEqual(ar)
   })
+
+  it('ignores inactive DDI rules', () => {
+    const inactiveDdi = SEED_DDI_RULES.map((r) =>
+      r.drugA === 'warfarin' && r.drugB === 'aspirin' ? { ...r, active: false } : r,
+    )
+    const alerts = evaluateCds({
+      medicineName: 'Aspirin 81mg',
+      activeMedications: ['Warfarin 5mg'],
+      allergies: [],
+      ddiRules: inactiveDdi,
+      allergyRules: SEED_ALLERGY_RULES,
+    })
+    expect(alerts.some((a) => a.kind === 'drug_drug' && a.ruleId === -1)).toBe(false)
+  })
+
+  it('moderate allergy still requires override reason because kind is allergy', () => {
+    const alerts = evaluateCds({
+      medicineName: 'Latex-containing syringe',
+      activeMedications: [],
+      allergies: ['latex'],
+      ...rules,
+    })
+    const latex = alerts.find((a) => a.kind === 'allergy' && a.ruleId === -106)
+    expect(latex).toBeTruthy()
+    expect(latex!.severity).toBe('moderate')
+    expect(requiresOverrideReason(alerts)).toBe(true)
+  })
 })

@@ -13,7 +13,7 @@ export {
 } from './cdsEngine'
 export { SEED_DDI_RULES, SEED_ALLERGY_RULES } from './cdsSeed'
 
-import { evaluateCds, formatCdsSummary } from './cdsEngine'
+import { evaluateCds } from './cdsEngine'
 import { SEED_DDI_RULES, SEED_ALLERGY_RULES } from './cdsSeed'
 
 /** @deprecated Use CdsAlert from cdsTypes */
@@ -47,20 +47,4 @@ export function checkDrugDrugInteractions(
 export function formatDrugInteractionAlert(alerts: DrugInteractionAlert[]): string | null {
   if (!alerts.length) return null
   return alerts.map((a) => `[${a.severity}] ${a.message} (vs ${a.withDrug})`).join('; ')
-}
-
-/** Format full CDS summary using seed rules (legacy path). */
-export function formatLegacyCdsSummary(
-  medicineName: string,
-  activeMedications: string[],
-  allergies?: string[],
-): string | null {
-  const alerts = evaluateCds({
-    medicineName,
-    activeMedications,
-    allergies,
-    ddiRules: SEED_DDI_RULES,
-    allergyRules: SEED_ALLERGY_RULES,
-  })
-  return formatCdsSummary(alerts, 'en')
 }
