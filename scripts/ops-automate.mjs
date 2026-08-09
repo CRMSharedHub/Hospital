@@ -3,10 +3,16 @@
  * Print / optionally deploy Phase A–D ops artifacts.
  * Usage:
  *   node scripts/ops-automate.mjs print
- *   node scripts/ops-automate.mjs check          # fail if any SQL missing
- *   node scripts/ops-automate.mjs bundle-sql     # write supabase/APPLY_ALL.sql
- *   node scripts/ops-automate.mjs gen-secrets    # print random secret values
- *   node scripts/ops-automate.mjs deploy-functions   # requires: supabase link
+ *   node scripts/ops-automate.mjs check
+ *   node scripts/ops-automate.mjs bundle-sql
+ *   node scripts/ops-automate.mjs gen-secrets
+ *   node scripts/ops-automate.mjs write-secrets   # gitignored .env.edge-secrets
+ *   node scripts/ops-automate.mjs set-secrets     # requires linked CLI
+ *   node scripts/ops-automate.mjs sync-config     # fill supabase/config.toml
+ *   node scripts/ops-automate.mjs doctor          # CLI + link + sources
+ *   node scripts/ops-automate.mjs smoke-edge      # OPTIONS probe (needs live URL)
+ *   node scripts/ops-automate.mjs deploy-functions
+ *   node scripts/ops-automate.mjs go-live-edge    # sync-config → set-secrets → deploy
  *   node scripts/ops-automate.mjs verify-env
  */
 
@@ -48,7 +54,16 @@ export const EDGE_FUNCTIONS = [
   { name: 'kms-unwrap', noVerifyJwt: false },
 ]
 
+const SECRET_KEYS = ['ENCRYPTION_KEY', 'RETENTION_CRON_SECRET', 'SCIM_TOKEN']
+const EDGE_SECRETS_FILE = '.env.edge-secrets'
+
+const thisFile = fileURLToPath(import.meta.url)
+const invokedAsCli =
+  Boolean(process.argv[1]) &&
+  join(process.argv[1]).replace(/\\/g, '/').toLowerCase() === thisFile.replace(/\\/g, '/').toLowerCase()
+
 const cmd = process.argv[2] || 'print'
+const flags = new Set(process.argv.slice(3))
 
 function printSqlOrder() {
   console.log('# SQL apply order (Dashboard → SQL Editor)\n')
@@ -66,9 +81,16 @@ function printSqlOrder() {
   console.log('supabase secrets set SCIM_TOKEN="<random>"')
   console.log('# optional: PAYMENT_PROVIDER, STRIPE_*, APP_ORIGIN')
   console.log('\n# Helpers\n')
-  console.log('npm run ops:check          # fail CI if SQL missing')
-  console.log('npm run ops:bundle-sql     # write supabase/APPLY_ALL.sql')
-  console.log('npm run ops:gen-secrets    # print random secret values')
+  console.log('npm run ops:check')
+  console.log('npm run ops:bundle-sql')
+  console.log('npm run ops:gen-secrets')
+  console.log('npm run ops:write-secrets')
+  console.log('npm run ops:doctor')
+  console.log('npm run ops:sync-config')
+  console.log('npm run ops:set-secrets      # needs: supabase login + link')
+  console.log('npm run ops:deploy-functions')
+  console.log('npm run ops:go-live-edge')
+  console.log('npm run ops:smoke-edge')
 }
 
 function checkSqlFiles() {
@@ -126,18 +148,228 @@ function bundleSql() {
   console.log('  psql "$DATABASE_URL" -f supabase/APPLY_ALL.sql')
 }
 
+function makeSecrets() {
+  return {
+    ENCRYPTION_KEY: randomBytes(32).toString('base64url'),
+    RETENTION_CRON_SECRET: randomBytes(24).toString('hex'),
+    SCIM_TOKEN: randomBytes(24).toString('hex'),
+  }
+}
+
 function genSecrets() {
-  const enc = randomBytes(32).toString('base64url')
-  const retention = randomBytes(24).toString('hex')
-  const scim = randomBytes(24).toString('hex')
+  const s = makeSecrets()
   console.log('# Copy into: supabase secrets set …\n')
-  console.log(`ENCRYPTION_KEY=${enc}`)
-  console.log(`RETENTION_CRON_SECRET=${retention}`)
-  console.log(`SCIM_TOKEN=${scim}`)
+  for (const k of SECRET_KEYS) console.log(`${k}=${s[k]}`)
   console.log('\n# CLI example\n')
-  console.log(`supabase secrets set ENCRYPTION_KEY="${enc}"`)
-  console.log(`supabase secrets set RETENTION_CRON_SECRET="${retention}"`)
-  console.log(`supabase secrets set SCIM_TOKEN="${scim}"`)
+  for (const k of SECRET_KEYS) console.log(`supabase secrets set ${k}="${s[k]}"`)
+  console.log('\n# Or: npm run ops:write-secrets && npm run ops:set-secrets')
+}
+
+function parseEnvFile(path) {
+  const out = {}
+  if (!existsSync(path)) return out
+  for (const line of readFileSync(path, 'utf8').split(/\r?\n/)) {
+    const t = line.trim()
+    if (!t || t.startsWith('#')) continue
+    const i = t.indexOf('=')
+    if (i <= 0) continue
+    out[t.slice(0, i)] = t.slice(i + 1).replace(/^["']|["']$/g, '')
+  }
+  return out
+}
+
+function writeSecrets() {
+  const path = join(root, EDGE_SECRETS_FILE)
+  if (existsSync(path) && !flags.has('--force')) {
+    console.log(`${EDGE_SECRETS_FILE} already exists (pass --force to overwrite).`)
+    const existing = parseEnvFile(path)
+    for (const k of SECRET_KEYS) {
+      console.log(`${k}: ${existing[k] ? 'present' : 'MISSING'}`)
+    }
+    return existing
+  }
+  const s = makeSecrets()
+  const body = [
+    '# AUTO-GENERATED — gitignored. Do not commit.',
+    `# ${new Date().toISOString()}`,
+    ...SECRET_KEYS.map((k) => `${k}=${s[k]}`),
+    '',
+  ].join('\n')
+  writeFileSync(path, body, 'utf8')
+  console.log(`Wrote ${EDGE_SECRETS_FILE}`)
+  return s
+}
+
+function loadEdgeSecrets() {
+  const fromFile = parseEnvFile(join(root, EDGE_SECRETS_FILE))
+  const fromEnv = {}
+  for (const k of SECRET_KEYS) {
+    if (process.env[k]) fromEnv[k] = process.env[k]
+  }
+  const merged = { ...fromFile, ...fromEnv }
+  const missing = SECRET_KEYS.filter((k) => !merged[k])
+  return { secrets: merged, missing }
+}
+
+let cachedCli = undefined
+
+function resolveSupabaseBin() {
+  if (cachedCli !== undefined) return cachedCli
+  const direct = spawnSync('supabase', ['--version'], { encoding: 'utf8', shell: true })
+  if (direct.status === 0) {
+    cachedCli = { bin: 'supabase', version: (direct.stdout || direct.stderr || '').trim(), via: 'path' }
+    return cachedCli
+  }
+  const npx = spawnSync('npx', ['--yes', 'supabase', '--version'], {
+    encoding: 'utf8',
+    shell: true,
+    cwd: root,
+  })
+  if (npx.status === 0) {
+    cachedCli = {
+      bin: 'npx',
+      prefix: ['--yes', 'supabase'],
+      version: (npx.stdout || npx.stderr || '').trim().split(/\r?\n/).pop(),
+      via: 'npx',
+    }
+    return cachedCli
+  }
+  cachedCli = null
+  return null
+}
+
+function runSupabase(args, { inherit = true } = {}) {
+  const cli = resolveSupabaseBin()
+  if (!cli) {
+    console.error('Supabase CLI not found. Install: npm i -g supabase  OR use npx supabase')
+    process.exit(1)
+  }
+  const fullArgs = cli.prefix ? [...cli.prefix, ...args] : args
+  const r = spawnSync(cli.bin, fullArgs, {
+    cwd: root,
+    stdio: inherit ? 'inherit' : 'pipe',
+    encoding: 'utf8',
+    shell: true,
+  })
+  return { ...r, cli }
+}
+
+function projectRefPath() {
+  return join(root, 'supabase', '.temp', 'project-ref')
+}
+
+function isLinked() {
+  const p = projectRefPath()
+  return existsSync(p) && readFileSync(p, 'utf8').trim().length > 0
+}
+
+function readProjectRef() {
+  if (!isLinked()) return null
+  return readFileSync(projectRefPath(), 'utf8').trim()
+}
+
+function syncConfig() {
+  const path = join(root, 'supabase', 'config.toml')
+  let text = existsSync(path) ? readFileSync(path, 'utf8') : '# Edge Functions config\n'
+  let added = 0
+  for (const f of EDGE_FUNCTIONS) {
+    const header = `[functions.${f.name}]`
+    if (text.includes(header)) continue
+    text += `\n${header}\nverify_jwt = ${f.noVerifyJwt ? 'false' : 'true'}\n`
+    added++
+  }
+  writeFileSync(path, text.replace(/\n{3,}/g, '\n\n'), 'utf8')
+  console.log(
+    added === 0
+      ? `config.toml already lists all ${EDGE_FUNCTIONS.length} functions.`
+      : `Added ${added} function block(s) to supabase/config.toml`,
+  )
+}
+
+function doctor() {
+  let issues = 0
+  console.log('## Edge / ops doctor\n')
+
+  const cli = resolveSupabaseBin()
+  if (!cli) {
+    console.log('CLI: MISSING (npm i -g supabase)')
+    issues++
+  } else {
+    console.log(`CLI: ok (${cli.via}) ${cli.version}`)
+  }
+
+  const ref = readProjectRef()
+  if (!ref) {
+    console.log('Link: NOT linked — run: npx supabase login && npx supabase link --project-ref <ref>')
+    issues++
+  } else {
+    console.log(`Link: ok (project-ref ${ref})`)
+  }
+
+  let missingSrc = 0
+  for (const f of EDGE_FUNCTIONS) {
+    const p = join(root, 'supabase', 'functions', f.name, 'index.ts')
+    if (!existsSync(p)) {
+      console.log(`Source: MISSING ${f.name}`)
+      missingSrc++
+      issues++
+    }
+  }
+  if (missingSrc === 0) console.log(`Sources: ok (${EDGE_FUNCTIONS.length} functions)`)
+
+  const cfg = join(root, 'supabase', 'config.toml')
+  if (!existsSync(cfg)) {
+    console.log('config.toml: MISSING')
+    issues++
+  } else {
+    const raw = readFileSync(cfg, 'utf8')
+    const cfgMissing = EDGE_FUNCTIONS.filter((f) => !raw.includes(`[functions.${f.name}]`))
+    if (cfgMissing.length) {
+      console.log(`config.toml: missing blocks → ${cfgMissing.map((f) => f.name).join(', ')} (run ops:sync-config)`)
+      issues++
+    } else {
+      console.log('config.toml: ok (all functions listed)')
+    }
+  }
+
+  const { missing } = loadEdgeSecrets()
+  if (missing.length) {
+    console.log(`Local secrets file: incomplete — run ops:write-secrets (missing ${missing.join(', ')})`)
+  } else {
+    console.log(`Local secrets: ok (${EDGE_SECRETS_FILE} or env)`)
+  }
+
+  const env = parseEnvFile(join(root, '.env.local'))
+  const url = env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL
+  console.log(`App URL: ${url ? 'set' : 'unset (.env.local VITE_SUPABASE_URL)'}`)
+
+  console.log(issues === 0 ? '\nDoctor: ready for go-live-edge' : `\nDoctor: ${issues} issue(s) — fix before deploy`)
+  return issues
+}
+
+function setSecrets() {
+  if (!isLinked()) {
+    console.error('Project not linked. Run: npx supabase login && npx supabase link --project-ref <ref>')
+    process.exit(1)
+  }
+  let { secrets, missing } = loadEdgeSecrets()
+  if (missing.length) {
+    console.log('No complete secrets yet — generating .env.edge-secrets …')
+    secrets = writeSecrets()
+  }
+  for (const k of SECRET_KEYS) {
+    if (!secrets[k]) {
+      console.error(`Missing ${k}`)
+      process.exit(1)
+    }
+    console.log(`\n→ secrets set ${k}`)
+    const r = runSupabase(['secrets', 'set', `${k}=${secrets[k]}`])
+    if (r.status !== 0) {
+      console.error(`Failed setting ${k}`)
+      process.exit(r.status ?? 1)
+    }
+  }
+  console.log('\nAll Edge secrets set on linked project.')
 }
 
 function verifyEnv() {
@@ -175,30 +407,113 @@ function verifyEnv() {
 
 function deployFunctions() {
   if (!existsSync(join(root, 'supabase', 'config.toml'))) {
-    console.error('supabase/config.toml missing')
+    console.error('supabase/config.toml missing — run ops:sync-config')
+    process.exit(1)
+  }
+  if (!isLinked()) {
+    console.error('Project not linked. Run: npx supabase login && npx supabase link --project-ref <ref>')
     process.exit(1)
   }
   for (const f of EDGE_FUNCTIONS) {
     const args = ['functions', 'deploy', f.name]
     if (f.noVerifyJwt) args.push('--no-verify-jwt')
     console.log(`\n→ supabase ${args.join(' ')}`)
-    const r = spawnSync('supabase', args, { cwd: root, stdio: 'inherit', shell: true })
+    const r = runSupabase(args)
     if (r.status !== 0) {
-      console.error(`Failed deploying ${f.name} (is CLI installed and project linked?)`)
+      console.error(`Failed deploying ${f.name}`)
       process.exit(r.status ?? 1)
     }
   }
   console.log('\nAll listed Edge functions deployed (or already up to date).')
 }
 
-if (cmd === 'print' || cmd === 'sql') printSqlOrder()
-else if (cmd === 'check') checkSqlFiles()
-else if (cmd === 'bundle-sql') bundleSql()
-else if (cmd === 'gen-secrets') genSecrets()
-else if (cmd === 'verify-env') verifyEnv()
-else if (cmd === 'deploy-functions') deployFunctions()
-else {
-  console.log(`Unknown command: ${cmd}`)
-  console.log('Use: print | check | bundle-sql | gen-secrets | verify-env | deploy-functions')
-  process.exit(1)
+function resolveFunctionsBaseUrl() {
+  const env =
+    parseEnvFile(join(root, '.env.local')) ||
+    parseEnvFile(join(root, '.env'))
+  const url = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || env.VITE_SUPABASE_URL || '').replace(
+    /\/$/,
+    '',
+  )
+  if (!url) return null
+  return `${url}/functions/v1`
+}
+
+async function smokeEdge() {
+  const base = resolveFunctionsBaseUrl()
+  if (!base) {
+    console.error('No VITE_SUPABASE_URL / SUPABASE_URL — set in .env.local')
+    process.exit(1)
+  }
+  console.log(`Probing ${base}/… (OPTIONS — expects 2xx/4xx from gateway, not DNS fail)\n`)
+  let fail = 0
+  for (const f of EDGE_FUNCTIONS) {
+    const target = `${base}/${f.name}`
+    try {
+      const res = await fetch(target, { method: 'OPTIONS' })
+      const ok = res.status > 0 && res.status < 500
+      console.log(`${ok ? 'ok' : 'FAIL'} ${f.name} → HTTP ${res.status}`)
+      if (!ok) fail++
+    } catch (e) {
+      console.log(`FAIL ${f.name} → ${e.message || e}`)
+      fail++
+    }
+  }
+  if (fail) {
+    console.error(`\n${fail} function(s) unreachable (deploy missing or wrong URL)`)
+    process.exit(1)
+  }
+  console.log('\nSmoke OK — gateway responds for all function names.')
+}
+
+async function goLiveEdge() {
+  console.log('=== go-live-edge ===\n')
+  checkSqlFiles()
+  syncConfig()
+  const issues = doctor()
+  if (!isLinked()) {
+    console.error('\nStopped: link the project first, then re-run npm run ops:go-live-edge')
+    process.exit(1)
+  }
+  if (issues > 1) {
+    // link ok but other issues — still try set+deploy if sources exist
+    console.log('\nContinuing despite doctor warnings…')
+  }
+  setSecrets()
+  deployFunctions()
+  console.log('\n=== go-live-edge complete ===')
+  console.log('Next: enable MFA + PITR in Dashboard, then npm run ops:smoke-edge')
+}
+
+const USAGE =
+  'Use: print | check | bundle-sql | gen-secrets | write-secrets | set-secrets | sync-config | doctor | smoke-edge | deploy-functions | go-live-edge | verify-env'
+
+if (invokedAsCli) {
+  if (cmd === 'print' || cmd === 'sql') printSqlOrder()
+  else if (cmd === 'check') checkSqlFiles()
+  else if (cmd === 'bundle-sql') bundleSql()
+  else if (cmd === 'gen-secrets') genSecrets()
+  else if (cmd === 'write-secrets') writeSecrets()
+  else if (cmd === 'set-secrets') setSecrets()
+  else if (cmd === 'sync-config') syncConfig()
+  else if (cmd === 'doctor') {
+    const n = doctor()
+    process.exit(n === 0 ? 0 : 1)
+  } else if (cmd === 'verify-env') verifyEnv()
+  else if (cmd === 'deploy-functions') deployFunctions()
+  else if (cmd === 'smoke-edge') {
+    smokeEdge().catch((e) => {
+      console.error(e)
+      process.exit(1)
+    })
+  } else if (cmd === 'go-live-edge') {
+    goLiveEdge().catch((e) => {
+      console.error(e)
+      process.exit(1)
+    })
+  } else {
+    console.log(`Unknown command: ${cmd}`)
+    console.log(USAGE)
+    process.exit(1)
+  }
 }

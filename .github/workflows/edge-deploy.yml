@@ -1,0 +1,60 @@
+# Manual / optional CI deploy of Edge Functions.
+# Required repo secrets:
+#   SUPABASE_ACCESS_TOKEN  — Dashboard → Account → Access Tokens
+#   SUPABASE_PROJECT_REF   — project ref (Settings → General)
+#   ENCRYPTION_KEY, RETENTION_CRON_SECRET, SCIM_TOKEN  — stable across deploys
+
+name: Edge deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - 'supabase/functions/**'
+      - 'supabase/config.toml'
+      - 'scripts/ops-automate.mjs'
+      - '.github/workflows/edge-deploy.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' && secrets.SUPABASE_PROJECT_REF != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Supabase CLI
+        run: npm i -g supabase
+      - name: Link project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}"
+      - name: Sync config + check sources
+        run: |
+          npm run ops:sync-config
+          npm run ops:check
+      - name: Require stable Edge secrets
+        env:
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+          RETENTION_CRON_SECRET: ${{ secrets.RETENTION_CRON_SECRET }}
+          SCIM_TOKEN: ${{ secrets.SCIM_TOKEN }}
+        run: |
+          test -n "$ENCRYPTION_KEY"
+          test -n "$RETENTION_CRON_SECRET"
+          test -n "$SCIM_TOKEN"
+      - name: Set secrets
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+          RETENTION_CRON_SECRET: ${{ secrets.RETENTION_CRON_SECRET }}
+          SCIM_TOKEN: ${{ secrets.SCIM_TOKEN }}
+        run: |
+          supabase secrets set "ENCRYPTION_KEY=$ENCRYPTION_KEY"
+          supabase secrets set "RETENTION_CRON_SECRET=$RETENTION_CRON_SECRET"
+          supabase secrets set "SCIM_TOKEN=$SCIM_TOKEN"
+      - name: Deploy all Edge functions
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: npm run ops:deploy-functions

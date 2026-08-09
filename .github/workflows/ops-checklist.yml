@@ -28,3 +28,8 @@ jobs:
         run: node scripts/ops-automate.mjs check
       - name: Bundle SQL (smoke)
         run: node scripts/ops-automate.mjs bundle-sql
+      - name: Sync Edge config.toml
+        run: node scripts/ops-automate.mjs sync-config
+      - name: Re-check after sync-config
+        run: node scripts/ops-automate.mjs check
+

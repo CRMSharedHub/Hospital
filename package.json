@@ -23,8 +23,14 @@
     "ops:check": "node scripts/ops-automate.mjs check",
     "ops:bundle-sql": "node scripts/ops-automate.mjs bundle-sql",
     "ops:gen-secrets": "node scripts/ops-automate.mjs gen-secrets",
+    "ops:write-secrets": "node scripts/ops-automate.mjs write-secrets",
+    "ops:set-secrets": "node scripts/ops-automate.mjs set-secrets",
+    "ops:sync-config": "node scripts/ops-automate.mjs sync-config",
+    "ops:doctor": "node scripts/ops-automate.mjs doctor",
+    "ops:smoke-edge": "node scripts/ops-automate.mjs smoke-edge",
     "ops:verify-env": "node scripts/ops-automate.mjs verify-env",
-    "ops:deploy-functions": "node scripts/ops-automate.mjs deploy-functions"
+    "ops:deploy-functions": "node scripts/ops-automate.mjs deploy-functions",
+    "ops:go-live-edge": "node scripts/ops-automate.mjs go-live-edge"
   },
   "dependencies": {
     "@fullcalendar/daygrid": "^6.1.21",

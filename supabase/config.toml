@@ -1,5 +1,4 @@
-# Edge Functions config
-# Deploy medical-files with JWT verification enabled (default).
+# Edge Functions config — kept in sync by: npm run ops:sync-config
 
 [functions.medical-files]
 verify_jwt = true
@@ -13,4 +12,17 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.fhir-r4]
+verify_jwt = true
+
+[functions.mllp-ingest]
+verify_jwt = true
+
+[functions.nphies]
+verify_jwt = true
+
+# IdP SCIM uses Bearer SCIM_TOKEN (validated in function).
+[functions.scim]
+verify_jwt = false
+
+[functions.kms-unwrap]
 verify_jwt = true

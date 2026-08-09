@@ -7,11 +7,12 @@ Repo code + stubs are ready. These steps require **your** Supabase / IdP / legal
 ```bash
 npm run ops:print
 npm run ops:check
+npm run ops:doctor
 npm run ops:verify-env
-npm run ops:gen-secrets          # optional: print random secret values
+npm run ops:write-secrets        # once — gitignored .env.edge-secrets
 npm run ops:bundle-sql           # optional: one-file SQL paste → supabase/APPLY_ALL.sql
-supabase login
-supabase link --project-ref <ref>
+npx supabase login
+npx supabase link --project-ref <ref>
 ```
 
 ## 1. SQL (Dashboard → SQL Editor)
@@ -20,21 +21,15 @@ supabase link --project-ref <ref>
 
 **Option B (faster paste):** `npm run ops:bundle-sql` then open `supabase/APPLY_ALL.sql` in the SQL Editor.
 
-## 2. Secrets
+## 2–3. Secrets + Edge Functions (automated)
 
 ```bash
-npm run ops:gen-secrets   # prints values — copy into the commands below
-supabase secrets set ENCRYPTION_KEY="<min-32-chars>"
-supabase secrets set RETENTION_CRON_SECRET="<random>"
-supabase secrets set SCIM_TOKEN="<random>"
-# optional Stripe / APP_ORIGIN
+npm run ops:go-live-edge         # sync-config → set-secrets → deploy all 8 functions
+npm run ops:smoke-edge           # OPTIONS probe via VITE_SUPABASE_URL
+# optional Stripe / APP_ORIGIN still set manually if needed
 ```
 
-## 3. Edge Functions
-
-```bash
-npm run ops:deploy-functions
-```
+Or separately: `ops:set-secrets` then `ops:deploy-functions`.
 
 ## 4. MFA (Dashboard)
 

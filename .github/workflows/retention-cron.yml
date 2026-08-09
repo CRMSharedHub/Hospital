@@ -1,0 +1,28 @@
+# Daily retention purge against live Edge Function.
+# Required repo secrets:
+#   SUPABASE_URL            — https://<ref>.supabase.co
+#   RETENTION_CRON_SECRET   — same value set on the project
+
+name: Retention cron
+
+on:
+  schedule:
+    - cron: '15 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  purge:
+    runs-on: ubuntu-latest
+    if: ${{ secrets.SUPABASE_URL != '' && secrets.RETENTION_CRON_SECRET != '' }}
+    steps:
+      - name: Call retention-purge
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          RETENTION_CRON_SECRET: ${{ secrets.RETENTION_CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          BASE="${SUPABASE_URL%/}"
+          curl -fsS -X POST "${BASE}/functions/v1/retention-purge" \
+            -H "x-cron-secret: ${RETENTION_CRON_SECRET}" \
+            -H "Content-Type: application/json" \
+            -d '{}'

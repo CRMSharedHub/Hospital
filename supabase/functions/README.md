@@ -1,6 +1,14 @@
 # Edge Functions
 
-Full checklist: `docs/ops/PHASE_A_DEPLOY.md`
+Full checklist: `docs/ops/LIVE_CHECKLIST.md` · helpers: `docs/ops/AUTOMATED_OPS.md`
+
+```bash
+npm run ops:doctor
+npm run ops:write-secrets
+npx supabase login && npx supabase link --project-ref <ref>
+npm run ops:go-live-edge
+npm run ops:smoke-edge
+```
 
 ## medical-files
 
