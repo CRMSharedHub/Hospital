@@ -231,7 +231,7 @@
 5. Server-side key management (AWS KMS, HashiCorp Vault) for encryption keys. ✅ Edge Function + ENCRYPTION_KEY secret (KMS still optional upgrade)
 6. Streaming SSR for large data-heavy pages.
 7. Supabase Auth MFA (AAL2) replacing client-only TOTP store. ✅ Done when Supabase configured
-8. Durable offline mutation queue (IndexedDB) with conflict resolution.
+8. Durable offline mutation queue (IndexedDB) with conflict resolution. ✅ v1: status ops (appointments/invoices/lab/pharmacy), FIFO flush, server-wins
 
 ## Security hardening (P0 — Aug 2026)
 39. **Production fail-closed auth**
@@ -321,6 +321,11 @@
     - `phase-a-cron.sql` (pg_cron retention); `docs/ops/LIVE_CHECKLIST.md`.
     - Compliance templates: BAA / breach / training under `docs/compliance/`.
     - CI: `.github/workflows/ops-checklist.yml`.
+63. **Durable offline mutation queue (v1)**
+    - IndexedDB `mutationQueue` (Dexie v12); FIFO flush on `online` + SW `background-sync`.
+    - Queued ops: appointment / invoice / lab / pharmacy status updates (Supabase mode).
+    - Conflict policy: server-wins via `expectedStatus`; toast + banner for pending/conflict.
+    - Spec/plan: `docs/superpowers/specs/2026-08-12-offline-mutation-queue-design.md`.
 61. **Automatable ops follow-ups**
     - `npm run ops:print|verify-env|deploy-functions` (`scripts/ops-automate.mjs`).
     - Facility RLS helpers: `phase-d2-facility-rls.sql`.

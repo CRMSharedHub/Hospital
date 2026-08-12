@@ -52,7 +52,7 @@ Includes `phase-d2-facility-rls.sql` after `phase-d-enterprise.sql`.
 | Edge config sync + doctor + smoke | `supabase login` + `link` |
 | Secret generation + set-secrets / CI deploy | Creating Access Token + project ref |
 | Local /api/errors + /api/vitals sinks | Production APM URL |
-| Honest offline banner | Durable offline mutation queue |
+| Honest offline banner | Durable offline mutation queue (status ops, server-wins) |
 | SSO via `VITE_SSO_PROVIDER` | Enabling provider + IdP app |
 | SCIM create/ban users | IdP connector pointed at `/functions/v1/scim` |
 | KMS prefer `kms-unwrap` | Keeping ENCRYPTION_KEY stable across deploys |

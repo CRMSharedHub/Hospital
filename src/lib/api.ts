@@ -18,6 +18,7 @@ import type {
 import { toast } from 'sonner'
 import { CdsAckRequiredError } from './cdsEngine'
 import { invalidateCdsRulesCache } from './cdsRulesStore'
+import { runOrEnqueue, stashOfflineExpected, takeOfflineExpected } from './offlineQueueRuntime'
 
 function onErrorHandler(error: unknown, fallbackMsg: string) {
   const msg = error instanceof Error ? error.message : fallbackMsg
@@ -137,21 +138,35 @@ export const useAddAppointment = () => {
 export const useUpdateAppointmentStatus = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, status }: { id: number; status: Appointment['status'] }) =>
-      dal.updateAppointmentStatus(id, status),
+    mutationFn: async ({ id, status }: { id: number; status: Appointment['status'] }) => {
+      const expectedStatus = takeOfflineExpected(`appointment:${id}`)
+      return runOrEnqueue(
+        { type: 'updateAppointmentStatus', id, status, expectedStatus },
+        () => dal.updateAppointmentStatus(id, status),
+      )
+    },
     onMutate: async ({ id, status }) => {
       await queryClient.cancelQueries({ queryKey: ['appointments'] })
       const previous = queryClient.getQueryData<Appointment[]>(['appointments'])
+      stashOfflineExpected(
+        `appointment:${id}`,
+        previous?.find((a) => a.id === id)?.status,
+      )
       queryClient.setQueryData<Appointment[]>(['appointments'], (old = []) =>
         old.map((a) => (a.id === id ? { ...a, status } : a)),
       )
       return { previous }
     },
-    onError: (_e, _vars, ctx) => {
+    onError: (_e, vars, ctx) => {
+      takeOfflineExpected(`appointment:${vars.id}`)
       if (ctx?.previous) queryClient.setQueryData(['appointments'], ctx.previous)
       onErrorHandler(_e, 'Failed to update appointment')
     },
-    onSuccess: async (_, vars) => {
+    onSuccess: async (result, vars) => {
+      if (result.queued) {
+        toast.message('Saved offline — will sync when online')
+        return
+      }
       queryClient.invalidateQueries({ queryKey: ['appointments'] })
       toast.success('Appointment status updated')
       await dal.logAudit('update_status', 'appointments', vars.id, { status: vars.status })
@@ -413,11 +428,28 @@ export const useAddInvoice = () => {
 export const useUpdateInvoiceStatus = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, status, paidAmount }: { id: number; status: Invoice['status']; paidAmount?: number }) =>
-      dal.updateInvoiceStatus(id, status, paidAmount),
+    mutationFn: async ({
+      id,
+      status,
+      paidAmount,
+    }: {
+      id: number
+      status: Invoice['status']
+      paidAmount?: number
+    }) => {
+      const expectedStatus = takeOfflineExpected(`invoice:${id}`)
+      return runOrEnqueue(
+        { type: 'updateInvoiceStatus', id, status, paidAmount, expectedStatus },
+        () => dal.updateInvoiceStatus(id, status, paidAmount),
+      )
+    },
     onMutate: async ({ id, status, paidAmount }) => {
       await queryClient.cancelQueries({ queryKey: ['invoices'] })
       const previous = queryClient.getQueryData<Invoice[]>(['invoices'])
+      stashOfflineExpected(
+        `invoice:${id}`,
+        previous?.find((i) => i.id === id)?.status,
+      )
       queryClient.setQueryData<Invoice[]>(['invoices'], (old = []) =>
         old.map((inv) =>
           inv.id === id ? { ...inv, status, paidAmount: paidAmount ?? inv.paidAmount } : inv,
@@ -425,14 +457,22 @@ export const useUpdateInvoiceStatus = () => {
       )
       return { previous }
     },
-    onError: (_e, _vars, ctx) => {
+    onError: (_e, vars, ctx) => {
+      takeOfflineExpected(`invoice:${vars.id}`)
       if (ctx?.previous) queryClient.setQueryData(['invoices'], ctx.previous)
       onErrorHandler(_e, 'Failed to update invoice')
     },
-    onSuccess: async (_, vars) => {
+    onSuccess: async (result, vars) => {
+      if (result.queued) {
+        toast.message('Saved offline — will sync when online')
+        return
+      }
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
       toast.success('Invoice updated')
-      await dal.logAudit('update_status', 'invoices', vars.id, { status: vars.status, paidAmount: vars.paidAmount })
+      await dal.logAudit('update_status', 'invoices', vars.id, {
+        status: vars.status,
+        paidAmount: vars.paidAmount,
+      })
     },
   })
 }
@@ -628,23 +668,49 @@ export const useUpdatePharmacyOrderStatus = () => {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async ({ id, status }: { id: number; status: PharmacyOrder['status'] }) => {
-      const orders = await dal.getPharmacyOrders()
-      const order = orders.find((o) => o.id === id)
-      if (order && status === 'dispensed' && order.status !== 'dispensed') {
-        const medicines = await dal.getMedicines()
-        const med = medicines.find((m) => m.id === order.medicineId)
-        if (med) {
-          await dal.updateMedicineStock(order.medicineId, Math.max(0, med.stock - order.quantity))
-        }
-      }
-      return dal.updatePharmacyOrderStatus(id, status)
+      const expectedStatus = takeOfflineExpected(`pharmacy:${id}`)
+      return runOrEnqueue(
+        { type: 'updatePharmacyOrderStatus', id, status, expectedStatus },
+        async () => {
+          const orders = await dal.getPharmacyOrders()
+          const order = orders.find((o) => o.id === id)
+          if (order && status === 'dispensed' && order.status !== 'dispensed') {
+            const medicines = await dal.getMedicines()
+            const med = medicines.find((m) => m.id === order.medicineId)
+            if (med) {
+              await dal.updateMedicineStock(order.medicineId, Math.max(0, med.stock - order.quantity))
+            }
+          }
+          await dal.updatePharmacyOrderStatus(id, status)
+        },
+      )
     },
-    onSuccess: () => {
+    onMutate: async ({ id, status }) => {
+      await queryClient.cancelQueries({ queryKey: ['pharmacyOrders'] })
+      const previous = queryClient.getQueryData<PharmacyOrder[]>(['pharmacyOrders'])
+      stashOfflineExpected(
+        `pharmacy:${id}`,
+        previous?.find((o) => o.id === id)?.status,
+      )
+      queryClient.setQueryData<PharmacyOrder[]>(['pharmacyOrders'], (old = []) =>
+        old.map((o) => (o.id === id ? { ...o, status } : o)),
+      )
+      return { previous }
+    },
+    onError: (_e, vars, ctx) => {
+      takeOfflineExpected(`pharmacy:${vars.id}`)
+      if (ctx?.previous) queryClient.setQueryData(['pharmacyOrders'], ctx.previous)
+      onErrorHandler(_e, 'Failed to update order status')
+    },
+    onSuccess: (result) => {
+      if (result.queued) {
+        toast.message('Saved offline — will sync when online')
+        return
+      }
       queryClient.invalidateQueries({ queryKey: ['pharmacyOrders'] })
       queryClient.invalidateQueries({ queryKey: ['medicines'] })
       toast.success('Order status updated')
     },
-    onError: (e) => onErrorHandler(e, 'Failed to update order status'),
   })
 }
 
@@ -672,26 +738,49 @@ export const useAddLabTest = () => {
 export const useUpdateLabTestStatus = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, status, result }: { id: number; status: LabTest['status']; result?: string }) =>
-      dal.updateLabTestStatus(id, status, result),
+    mutationFn: async ({
+      id,
+      status,
+      result,
+    }: {
+      id: number
+      status: LabTest['status']
+      result?: string
+    }) => {
+      const expectedStatus = takeOfflineExpected(`lab:${id}`)
+      return runOrEnqueue(
+        { type: 'updateLabTestStatus', id, status, result, expectedStatus },
+        () => dal.updateLabTestStatus(id, status, result),
+      )
+    },
     onMutate: async ({ id, status, result }) => {
       await queryClient.cancelQueries({ queryKey: ['labTests'] })
       const previous = queryClient.getQueryData<LabTest[]>(['labTests'])
+      stashOfflineExpected(
+        `lab:${id}`,
+        previous?.find((t) => t.id === id)?.status,
+      )
       queryClient.setQueryData<LabTest[]>(['labTests'], (old = []) =>
-        old.map((t) =>
-          t.id === id ? { ...t, status, result: result ?? t.result } : t,
-        ),
+        old.map((t) => (t.id === id ? { ...t, status, result: result ?? t.result } : t)),
       )
       return { previous }
     },
-    onError: (_e, _vars, ctx) => {
+    onError: (_e, vars, ctx) => {
+      takeOfflineExpected(`lab:${vars.id}`)
       if (ctx?.previous) queryClient.setQueryData(['labTests'], ctx.previous)
       onErrorHandler(_e, 'Failed to update lab test')
     },
-    onSuccess: async (_, vars) => {
+    onSuccess: async (syncResult, vars) => {
+      if (syncResult.queued) {
+        toast.message('Saved offline — will sync when online')
+        return
+      }
       queryClient.invalidateQueries({ queryKey: ['labTests'] })
       toast.success('Lab test updated')
-      await dal.logAudit('update_status', 'lab_tests', vars.id, { status: vars.status, hasResult: !!vars.result })
+      await dal.logAudit('update_status', 'lab_tests', vars.id, {
+        status: vars.status,
+        hasResult: !!vars.result,
+      })
     },
   })
 }

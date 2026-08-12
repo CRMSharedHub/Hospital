@@ -14,6 +14,7 @@ import {
 import { useAuthStore } from './store/authStore'
 import { reportUnhandledError } from './lib/errorReporter'
 import { initWebVitals, reportVitalsToEndpoint } from './lib/webVitals'
+import { startOfflineQueueLifecycle } from './lib/offlineQueueLifecycle'
 import './index.css'
 
 // ── Global error handlers ──────────────────────────────────
@@ -130,3 +131,5 @@ if ('serviceWorker' in navigator) {
     })
   })
 }
+
+startOfflineQueueLifecycle(queryClient)
